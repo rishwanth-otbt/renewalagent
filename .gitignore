@@ -8,3 +8,6 @@ ENV/
 .idea/
 .vscode/
 *.log
+
+# Saved renewal policy versions (runtime data)
+backend/policies/policy_v*.json
