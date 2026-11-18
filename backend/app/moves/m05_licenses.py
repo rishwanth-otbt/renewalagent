@@ -16,15 +16,15 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
 
     def run(self, dossier: Any) -> MoveTrace:
         raw = dossier.raw_data
-        usage = raw.get("usage", {})
-        pricing = raw.get("current_pricing", {})
+        usage = raw["usage"]
+        pricing = raw["current_pricing"]
 
         # ----------------------------------------------------
         # Action A1: Extract License Inventory & Department Activity
         # ----------------------------------------------------
         def action_a1():
-            dossier.total_provisioned_seats = int(pricing.get("total_seats", usage.get("total_provisioned_seats", 0)))
-            dossier.active_seats = int(usage.get("active_seats_last_90_days", 0))
+            dossier.total_provisioned_seats = pricing["total_seats"]
+            dossier.active_seats = usage["active_seats_last_90_days"]
             dossier.inactive_seats = max(0, dossier.total_provisioned_seats - dossier.active_seats)
             return f"Provisioned: {dossier.total_provisioned_seats:,}, Active: {dossier.active_seats:,}, Inactive: {dossier.inactive_seats:,}"
 
@@ -34,10 +34,8 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
         # Action A2: Calculate Utilization Rate
         # ----------------------------------------------------
         def action_a2():
-            if dossier.total_provisioned_seats > 0:
-                dossier.utilization_pct = round((dossier.active_seats / dossier.total_provisioned_seats) * 100, 1)
-            else:
-                dossier.utilization_pct = 100.0
+            # total_seats > 0 is enforced by the input schema
+            dossier.utilization_pct = round((dossier.active_seats / dossier.total_provisioned_seats) * 100, 1)
             return f"Active Seat Utilization: {dossier.utilization_pct}%"
 
         self.execute_action("A2", "CalculateUtilizationRate", action_a2)
@@ -61,7 +59,7 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
         # ----------------------------------------------------
         if has_shelfware:
             def action_a3():
-                unit_price = dossier.proposed_unit_price or dossier.current_unit_price
+                unit_price = dossier.proposed_unit_price
                 # Modeled buffer of 9% above active seats
                 dossier.recommended_seats = min(dossier.total_provisioned_seats, int(round(dossier.active_seats * 1.09)))
                 dossier.reduction_opportunity = max(0, dossier.total_provisioned_seats - dossier.recommended_seats)
@@ -98,6 +96,58 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
         else:
             self.skip_action("A5", "ConfirmFullLicenseRetention", "Shelfware detected; full volume retention rejected.")
 
+        # ----------------------------------------------------
+        # Gate G2: Renewal Volume Type (Expansion / Reduction / Flat)
+        # ----------------------------------------------------
+        proposal = raw["vendor_proposal"]
+        dossier.proposed_seats = proposal["proposed_seats"]
+        dossier.seat_change = dossier.proposed_seats - dossier.total_provisioned_seats
+        if dossier.seat_change > 0:
+            dossier.renewal_type = "EXPANSION"
+        elif dossier.seat_change < 0:
+            dossier.renewal_type = "REDUCTION"
+        else:
+            dossier.renewal_type = "FLAT"
+
+        current_modules = pricing.get("modules_included") or []
+        proposed_modules = proposal.get("proposed_modules") or []
+        dossier.added_modules = [m for m in proposed_modules if m not in current_modules]
+        dossier.removed_modules = [m for m in current_modules if m not in proposed_modules] if proposed_modules else []
+
+        self.record_gate(
+            "G2",
+            "RenewalVolumeTypeGate",
+            passed=True,
+            decision=f"RENEWAL_{dossier.renewal_type}",
+            details=(f"Proposed {dossier.proposed_seats:,} vs current {dossier.total_provisioned_seats:,} seats "
+                     f"({dossier.seat_change:+,}); modules added: {len(dossier.added_modules)}, removed: {len(dossier.removed_modules)}.")
+        )
+
+        # ----------------------------------------------------
+        # Action A6: Challenge Unsupported Expansion / Bundled Modules
+        # ----------------------------------------------------
+        expansion_unsupported = dossier.renewal_type == "EXPANSION" and dossier.has_shelfware
+        if expansion_unsupported or dossier.added_modules:
+            def action_a6():
+                notes = []
+                if expansion_unsupported:
+                    obs = (f"Vendor proposes +{dossier.seat_change:,} seats while {dossier.inactive_seats:,} current seats are inactive; "
+                           "expansion is not supported by usage.")
+                    dossier.performance_observations.append(obs)
+                    notes.append(obs)
+                if dossier.added_modules:
+                    flag = {
+                        "type": "Bundled Module Change",
+                        "detail": (f"Proposal adds {', '.join(dossier.added_modules)} not in the current agreement. "
+                                   "Confirm the business requested it and get it priced separately from the renewal.")
+                    }
+                    dossier.addenda_flags.append(flag)
+                    notes.append(flag["detail"])
+                return " | ".join(notes)
+            self.execute_action("A6", "ChallengeScopeChanges", action_a6)
+        else:
+            self.skip_action("A6", "ChallengeScopeChanges", "No unsupported seat expansion and no new modules in the proposal.")
+
         return MoveTrace(
             move_id=self.move_id,
             name=self.name,
@@ -105,5 +155,6 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
             status="COMPLETE",
             actions=self.action_traces,
             gates=self.gate_traces,
-            summary=f"Utilization: {dossier.utilization_pct}%. Recommended seats: {dossier.recommended_seats:,} (Reduction: {dossier.reduction_opportunity:,})."
+            summary=(f"Utilization: {dossier.utilization_pct}%. Recommended seats: {dossier.recommended_seats:,} "
+                     f"(Reduction: {dossier.reduction_opportunity:,}). Renewal type: {dossier.renewal_type}.")
         )

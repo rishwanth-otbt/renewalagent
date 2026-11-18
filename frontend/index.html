@@ -21,6 +21,8 @@
         <select id="caseSelect">
           <option value="">Loading cases...</option>
         </select>
+        <label for="asOfInput" title="Assessment date (blank = today). Fix it for a repeatable demo.">As of:</label>
+        <input type="date" id="asOfInput">
         <input type="file" id="fileUploadInput" accept=".json" style="display: none;">
         <button id="uploadBtn" title="Upload Contract JSON">📁 Upload</button>
         <button id="flowModalBtn" title="View Kozmo Move Execution Graph">🔀 View Move Flow</button>
@@ -109,7 +111,9 @@
       <div class="banner-icon">📋</div>
       <div class="banner-body">
         <h3 id="execDecisionHeading">Executive Summary & Position</h3>
+        <div id="execDecisionTags" class="decision-tags"></div>
         <p id="execDecisionRationale">Running state machine analysis...</p>
+        <div id="execDecisionDrivers" class="decision-drivers"></div>
       </div>
     </section>
 

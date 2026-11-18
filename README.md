@@ -13,9 +13,10 @@ Proof of Concept 1 implementation of the automated IT Vendor Renewal Decision Br
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│  LAYER 2 — STATE MACHINE (backend/state_machine.py)     │
-│  IDLE → INTAKE → EXTRACT → COMPARE → CALCULATE →       │
-│  ASSESS → RECOMMEND → BRIEF_READY                       │
+│  LAYER 2 — VALIDATE + MOVE PIPELINE (backend/app/)      │
+│  RenewalInputData schema check (no default values) →    │
+│  M01 Goals → M02 Terms → M03 Deadlines →                │
+│  M04 Performance → M05 Licenses → M10 Recommend         │
 └──────────────────────┬──────────────────────────────────┘
                        │
                        ▼
@@ -55,3 +56,9 @@ You can also open `frontend/index.html` directly in your browser.
 
 ### 4. Adding New Test Contracts
 Drop any new `.json` file conforming to the contract schema into `backend/data/`. Refresh the web interface, and it will immediately show up in the case selector dropdown for automated evaluation.
+
+The schema is strict (`backend/app/models/input_models.py`). Every field used in a calculation or decision
+(dates, notice period, auto-renewal, pricing, seats, SLA figures, budget, budget owner, ...) is required and has
+no default. A file with a missing or wrongly-typed field is rejected with HTTP 422 and a list of the exact
+problems, e.g. `msa.current_term_end: Field required` or `msa.auto_renewal: Input should be a valid boolean`.
+Nothing is filled in with an assumed value. The assessment date is the day the case is run.

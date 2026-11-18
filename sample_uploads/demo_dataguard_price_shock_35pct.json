@@ -1,0 +1,181 @@
+{
+  "case_id": "DEMO-DATAGUARD-35",
+  "vendor": {
+    "name": "DataGuard Cyber Security",
+    "service_type": "Endpoint Detection & SOC Platform",
+    "account_manager": "David Miller",
+    "account_manager_email": "dmiller@dataguard.security",
+    "vendor_tier": "Tier 1 Mission-Critical"
+  },
+  "msa": {
+    "contract_id": "MSA-DG-2023-00912",
+    "signed_date": "2023-12-01",
+    "current_term_start": "2024-06-01",
+    "current_term_end": "2027-05-31",
+    "notice_period_days": 45,
+    "auto_renewal": false,
+    "governing_law": "New York, USA",
+    "payment_terms_days": 45,
+    "termination_for_convenience": true,
+    "price_increase_cap_pct": 5.0
+  },
+  "current_pricing": {
+    "annual_contract_value": 400000,
+    "total_seats": 2000,
+    "unit_price_per_seat": 200,
+    "billing_frequency": "annual",
+    "modules_included": [
+      "EDR Core",
+      "Automated Remediation",
+      "Threat Hunting",
+      "24x7 SOC Coverage"
+    ],
+    "currency": "USD"
+  },
+  "vendor_proposal": {
+    "received_date": "2026-10-15",
+    "proposed_annual_value": 540000.0,
+    "proposed_seats": 2000,
+    "proposed_unit_price": 270.0,
+    "proposed_term_months": 36,
+    "proposed_modules": [
+      "EDR Core",
+      "Automated Remediation",
+      "Threat Hunting",
+      "24x7 SOC Coverage",
+      "Cloud Workload Protection"
+    ],
+    "price_increase_justification": "Demo variant: +35% price shock",
+    "proposal_expiry_date": "2026-12-01"
+  },
+  "sla": {
+    "contracted_uptime_pct": 99.9,
+    "contracted_support_response_hours": 1,
+    "contracted_resolution_hours": 8,
+    "actual_uptime_pct": 99.98,
+    "actual_support_sla_achievement_pct": 96.5,
+    "critical_incidents_count": 0,
+    "critical_incidents_detail": [],
+    "service_credits_claimed_usd": 0,
+    "service_credits_available_usd": 0
+  },
+  "addendum": [
+    {
+      "addendum_id": "ADD-DG-01",
+      "signed_date": "2024-03-01",
+      "description": "SOC 2 Type II and ISO 27001 annual compliance audit warranty",
+      "expiry": null,
+      "status": "active"
+    }
+  ],
+  "usage": {
+    "total_provisioned_seats": 2000,
+    "active_seats_last_90_days": 1940,
+    "inactive_seats": 60,
+    "departments": [
+      {
+        "name": "Corporate Endpoints",
+        "provisioned": 1200,
+        "active": 1180
+      },
+      {
+        "name": "Engineering Laptops",
+        "provisioned": 500,
+        "active": 485
+      },
+      {
+        "name": "Field Operations",
+        "provisioned": 300,
+        "active": 275
+      }
+    ],
+    "feature_adoption": {
+      "edr_core_pct": 98,
+      "automated_remediation_pct": 91,
+      "threat_hunting_pct": 84
+    }
+  },
+  "roadmap": {
+    "promised_milestones": [
+      {
+        "feature": "macOS Sonoma Kernel Extensions",
+        "promised_date": "2024-06-01",
+        "delivered": true,
+        "actual_date": "2024-05-20"
+      },
+      {
+        "feature": "SIEM Connector v3",
+        "promised_date": "2024-11-01",
+        "delivered": true,
+        "actual_date": "2024-10-30"
+      },
+      {
+        "feature": "Zero-Trust Identity Sync",
+        "promised_date": "2025-04-01",
+        "delivered": true,
+        "actual_date": "2025-03-15"
+      },
+      {
+        "feature": "Linux eBPF Sensor",
+        "promised_date": "2025-09-01",
+        "delivered": true,
+        "actual_date": "2025-08-25"
+      },
+      {
+        "feature": "AI Threat Forensics",
+        "promised_date": "2026-03-01",
+        "delivered": true,
+        "actual_date": "2026-02-18"
+      }
+    ]
+  },
+  "emails": [
+    {
+      "date": "2026-10-15",
+      "from": "dmiller@dataguard.security",
+      "subject": "DataGuard 3-Year Renewal Proposal with Cloud Protection",
+      "summary": "Vendor proposed 3-year agreement capped at 3% annual adjustment with added cloud security module."
+    },
+    {
+      "date": "2026-10-25",
+      "from": "ciso@acme.com",
+      "subject": "Positive review for DataGuard renewal",
+      "summary": "Internal security operations team endorsed renewal based on zero false-negative incidents and excellent support."
+    }
+  ],
+  "renewal_history": [
+    {
+      "renewal_cycle": "2021-2023",
+      "original_acv": 360000,
+      "renewed_acv": 380000,
+      "increase_pct": 5.5,
+      "seats": 1800,
+      "term_months": 24,
+      "outcome": "Standard renewal with seat tier expansion",
+      "negotiated_savings_usd": 15000
+    },
+    {
+      "renewal_cycle": "2023-2026",
+      "original_acv": 380000,
+      "renewed_acv": 400000,
+      "increase_pct": 5.2,
+      "seats": 2000,
+      "term_months": 36,
+      "outcome": "3-year lock-in with SOC warranty",
+      "negotiated_savings_usd": 20000
+    }
+  ],
+  "internal_assessment": {
+    "strategic_importance": "Critical",
+    "replacement_difficulty": "High",
+    "known_alternatives": [
+      "CrowdStrike Falcon",
+      "SentinelOne Singularity",
+      "Microsoft Defender for Endpoint"
+    ],
+    "migration_estimate_months": 9,
+    "internal_champion": "CISO",
+    "budget_owner": "Head of InfoSec",
+    "approved_budget_acv": 420000
+  }
+}

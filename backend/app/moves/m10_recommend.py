@@ -1,6 +1,9 @@
 """
 Move M10: Model Costs & Recommend Next Steps (Verb: Model & Recommend)
 Synthesizes findings from M01-M05, models 3-year commercial exposure, scores risks, and issues the strategic verdict.
+
+Every sentence in the recommendation is built from the facts that triggered it (decision_drivers),
+so two cases routed to the same decision for different reasons get different rationales.
 """
 from typing import Any, Dict, List
 try:
@@ -9,22 +12,61 @@ except ImportError:
     from app.core.base_move import BaseMove, MoveTrace
 
 
+HARD_TO_REPLACE_LEVELS = {"high", "very high", "critical"}
+LONG_MIGRATION_MONTHS = 12
+NOTICE_URGENT_DAYS = 21  # mirrors M03 G2
+
+
+def _fmt_usd(v: float) -> str:
+    return f"${v:,.0f}"
+
+
 class MoveM10ModelCostsAndRecommend(BaseMove):
     move_id = "M10"
     name = "Model Costs & Recommend"
     verb = "RECOMMEND"
 
+    # ----------------------------------------------------
+    # Notice-aware wording (depends on M03 G2 outcome)
+    # ----------------------------------------------------
+    @staticmethod
+    def _notice_objective(d: Any) -> str:
+        if d.notice_passed and d.auto_renewal:
+            exit_right = ("invoke the termination-for-convenience clause if terms are not met"
+                          if d.termination_for_convenience
+                          else "negotiate a mutual early-exit or a 12-month bridge term (no termination-for-convenience right)")
+            return (f"Notice deadline ({d.notice_deadline}) was missed and the contract auto-renews at term end "
+                    f"({d.renewal_deadline}). Use the pending renewal as leverage and {exit_right}.")
+        if d.notice_passed:
+            return (f"Notice deadline ({d.notice_deadline}) has passed and there is no auto-renewal: the contract lapses on "
+                    f"{d.renewal_deadline}. Secure a short bridge extension to avoid a service gap while terms are agreed.")
+        if d.notice_at_risk:
+            return (f"Serve conditional Notice of Non-Renewal by {d.notice_deadline} ({d.days_to_notice} days left) "
+                    "to preserve exit rights and negotiation leverage.")
+        return f"Serve conditional Notice of Non-Renewal before {d.notice_deadline} if acceptable terms are not agreed."
+
+    @staticmethod
+    def _notice_fallback(d: Any, stay_action: str, exit_action: str = "fast-track an RFP with short-listed alternatives") -> str:
+        if d.notice_passed and d.auto_renewal:
+            if d.termination_for_convenience:
+                return f"{stay_action} If the vendor will not move, accept the auto-renewal and exercise termination for convenience once a replacement is ready."
+            return f"{stay_action} If the vendor will not move, the contract rolls into a new term; plan the migration to land at the end of that term."
+        if d.notice_passed:
+            return f"{stay_action} If no agreement is reached before {d.renewal_deadline}, sign a short bridge extension at the current rate."
+        return f"{stay_action} If the vendor will not move, issue notice of non-renewal before {d.notice_deadline} and {exit_action}."
+
     def run(self, dossier: Any) -> MoveTrace:
         raw = dossier.raw_data
-        history = raw.get("renewal_history", [])
+        history = raw["renewal_history"]
+        internal = raw["internal_assessment"]
 
         # ----------------------------------------------------
-        # Action A1: Model Commercial Deltas & 3-Year Exposure
+        # Action A1: Model Commercial Deltas & 3-Year Exposure (incl. contractual price cap)
         # ----------------------------------------------------
         def action_a1():
             dossier.increase_usd = round(dossier.proposed_acv - dossier.current_acv, 2)
             dossier.increase_pct = round((dossier.increase_usd / dossier.current_acv * 100), 1) if dossier.current_acv > 0 else 0.0
-            
+
             term_factor = dossier.proposed_term_months / 12.0
             dossier.three_year_baseline = round(dossier.current_acv * term_factor, 2)
             dossier.three_year_proposal = round(dossier.proposed_acv * term_factor, 2)
@@ -37,10 +79,21 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             else:
                 dossier.negotiation_target_acv = round(dossier.current_acv * 1.03, 2)
 
+            # Contractual price-increase cap (MSA). A proposal above the cap is not enforceable as-is.
+            cap = raw["msa"].get("price_increase_cap_pct")
+            dossier.price_cap_pct = float(cap) if cap is not None else None
+            dossier.cap_breach = cap is not None and dossier.increase_pct > float(cap)
+            if dossier.cap_breach:
+                dossier.capped_acv = round(dossier.current_acv * (1 + float(cap) / 100), 2)
+                dossier.negotiation_target_acv = min(dossier.negotiation_target_acv, dossier.capped_acv)
+            else:
+                dossier.capped_acv = None
+
             dossier.three_year_target = round(dossier.negotiation_target_acv * term_factor, 2)
             dossier.budget_gap_usd = round(dossier.proposed_acv - dossier.approved_budget_acv, 2) if dossier.approved_budget_acv > 0 else 0.0
-            
-            return f"Increase: +{dossier.increase_pct}% (+${dossier.increase_usd:,.0f}), Target ACV: ${dossier.negotiation_target_acv:,.0f}"
+
+            cap_note = f", CAP BREACH ({dossier.increase_pct}% > {dossier.price_cap_pct}% cap)" if dossier.cap_breach else ""
+            return f"Increase: +{dossier.increase_pct}% (+{_fmt_usd(dossier.increase_usd)}), Target ACV: {_fmt_usd(dossier.negotiation_target_acv)}{cap_note}"
 
         self.execute_action("A1", "ModelCommercialExposure", action_a1)
 
@@ -52,23 +105,23 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             sum_increases = 0.0
             prev_cycles = []
             for item in history:
-                inc_pct = float(item.get("increase_pct", 0.0))
-                spend = float(item.get("renewed_acv", 0.0)) * (int(item.get("term_months", 12)) / 12.0)
+                inc_pct = float(item["increase_pct"])
+                spend = float(item["renewed_acv"]) * (item["term_months"] / 12.0)
                 total_spend += spend
                 sum_increases += inc_pct
                 prev_cycles.append({
-                    "cycle": item.get("renewal_cycle", "N/A"),
-                    "seats": item.get("seats", 0),
-                    "renewed_acv": float(item.get("renewed_acv", 0.0)),
+                    "cycle": item["renewal_cycle"],
+                    "seats": item["seats"],
+                    "renewed_acv": float(item["renewed_acv"]),
                     "increase_pct": inc_pct,
-                    "outcome": item.get("outcome", "")
+                    "outcome": item["outcome"]
                 })
 
             dossier.historical_spend_to_date = round(total_spend, 2)
             dossier.historical_avg_increase_pct = round(sum_increases / len(history), 1) if history else 0.0
             dossier.current_vs_avg_increase_pct = round(dossier.increase_pct - dossier.historical_avg_increase_pct, 1)
             dossier.previous_cycles = prev_cycles
-            return f"Past spend: ${dossier.historical_spend_to_date:,.0f}, Avg increase: {dossier.historical_avg_increase_pct}% (Current ask is {dossier.current_vs_avg_increase_pct}% vs avg)"
+            return f"Past spend: {_fmt_usd(dossier.historical_spend_to_date)}, Avg increase: {dossier.historical_avg_increase_pct}% (Current ask is {dossier.current_vs_avg_increase_pct}% vs avg)"
 
         self.execute_action("A2", "BenchmarkHistoricalTrends", action_a2)
 
@@ -77,23 +130,30 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         # ----------------------------------------------------
         def action_a3():
             risks: List[Dict[str, str]] = []
-            high_count = 0
 
             if dossier.increase_pct >= 25.0:
                 risks.append({"risk": f"Severe price escalation (+{dossier.increase_pct}%)", "level": "High", "impact": "Substantial unbudgeted financial exposure"})
-                high_count += 1
             elif dossier.increase_pct >= 10.0:
                 level = "High" if dossier.increase_pct >= 15 else "Medium"
                 risks.append({"risk": f"Commercial price increase (+{dossier.increase_pct}%)", "level": level, "impact": "Budget overrun without enhanced capacity"})
-                if level == "High":
-                    high_count += 1
+
+            if dossier.cap_breach:
+                risks.append({"risk": f"Proposal breaches contractual {dossier.price_cap_pct:g}% price-increase cap",
+                              "level": "High",
+                              "impact": f"Increase above cap is not contractually supported; capped ACV is {_fmt_usd(dossier.capped_acv)}"})
 
             if dossier.has_shelfware:
-                risks.append({"risk": f"Underutilized licenses ({dossier.inactive_seats:,} inactive seats)", "level": "Medium", "impact": f"Annualized waste exposure (${dossier.annualized_waste_usd:,.0f})"})
+                risks.append({"risk": f"Underutilized licenses ({dossier.inactive_seats:,} inactive seats)", "level": "Medium", "impact": f"Annualized waste exposure ({_fmt_usd(dossier.annualized_waste_usd)})"})
+
+            if dossier.renewal_type == "EXPANSION" and dossier.has_shelfware:
+                risks.append({"risk": f"Seat expansion (+{dossier.seat_change:,}) not supported by usage", "level": "Medium", "impact": "Paying for growth while current seats sit idle"})
+
+            if dossier.added_modules:
+                risks.append({"risk": f"Bundled new modules ({', '.join(dossier.added_modules)})", "level": "Medium" if dossier.increase_pct > 5 else "Low",
+                              "impact": "Scope added to the renewal may be driving part of the price increase"})
 
             if dossier.support_sla_achievement < 75.0 or dossier.critical_incidents_count >= 3 or dossier.uptime_gap > 0.15:
                 risks.append({"risk": "Chronic SLA underperformance & disruption", "level": "High", "impact": "Operational downtime and productivity degradation"})
-                high_count += 1
 
             if dossier.proposed_term_months >= 36 and (dossier.increase_pct > 5.0 or dossier.performance_rating == "Needs Improvement"):
                 risks.append({"risk": f"{dossier.proposed_term_months}-month term lock-in", "level": "Medium", "impact": "Reduced operational and architectural flexibility"})
@@ -104,32 +164,62 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             if len(dossier.roadmap_delayed_features) >= 2:
                 risks.append({"risk": "Roadmap delivery backlogs", "level": "Medium", "impact": "Failure to realize anticipated platform capabilities"})
 
-            if dossier.notice_at_risk:
-                risks.append({"risk": f"Imminent {dossier.notice_period_days}-day notice deadline", "level": "High", "impact": "Automatic renewal lock-in if formal non-renewal notice is missed"})
-                high_count += 1
+            if dossier.notice_passed and dossier.auto_renewal:
+                risks.append({"risk": f"Notice deadline missed ({dossier.notice_deadline})", "level": "High",
+                              "impact": "Contract auto-renews into a new term; exit now needs vendor agreement or a termination right"})
+            elif dossier.notice_passed:
+                risks.append({"risk": f"Notice window closed; contract lapses {dossier.renewal_deadline}", "level": "Medium",
+                              "impact": "Service gap if renewal terms are not signed before term end"})
+            elif dossier.notice_at_risk:
+                risks.append({"risk": f"Imminent {dossier.notice_period_days}-day notice deadline ({dossier.days_to_notice} days left)", "level": "High",
+                              "impact": "Automatic renewal lock-in if formal non-renewal notice is missed"})
 
             if not risks:
                 risks.append({"risk": "Standard operational dependency", "level": "Low", "impact": "Routine vendor management and monitoring required"})
 
+            high = [r for r in risks if r["level"] == "High"]
             dossier.risk_items = risks
-            dossier.risk_level = "High" if high_count >= 2 else ("Medium–High" if high_count == 1 else "Low" if len(risks) == 1 and risks[0]["level"] == "Low" else "Medium")
-            
-            if dossier.risk_level == "High":
-                dossier.critical_concern = f"The proposed +{dossier.increase_pct}% increase combined with operational SLA breaches and impending notice cutoffs creates acute exposure if accepted as-is."
-            elif dossier.risk_level == "Low":
+            dossier.risk_level = "High" if len(high) >= 2 else ("Medium–High" if len(high) == 1 else "Low" if len(risks) == 1 and risks[0]["level"] == "Low" else "Medium")
+
+            if dossier.risk_level == "Low":
                 dossier.critical_concern = "No acute commercial or operational red flags detected. Maintain regular quarterly governance."
             else:
-                dossier.critical_concern = f"Committing to a {dossier.proposed_term_months // 12}-year term at a +{dossier.increase_pct}% premium locks in elevated expenditure while shelfware and service gaps remain unresolved."
+                top = high if high else [r for r in risks if r["level"] == "Medium"]
+                dossier.critical_concern = "Accepting the proposal as-is exposes the organization to: " + "; ".join(r["risk"] for r in top[:4]) + "."
 
-            return f"Overall Risk Level: {dossier.risk_level} ({len(risks)} risk items logged)"
+            return f"Overall Risk Level: {dossier.risk_level} ({len(risks)} risk items logged, {len(high)} high)"
 
         self.execute_action("A3", "SynthesizeRiskRegister", action_a3)
+
+        # ----------------------------------------------------
+        # Decision drivers: the facts that push away from a clean renewal
+        # ----------------------------------------------------
+        drivers: List[str] = []
+        if dossier.increase_pct > 5.0:
+            drivers.append(f"+{dossier.increase_pct}% price increase (historical average {dossier.historical_avg_increase_pct}%)")
+        if dossier.cap_breach:
+            drivers.append(f"increase exceeds the contractual {dossier.price_cap_pct:g}% cap")
+        if dossier.budget_gap_usd > 0:
+            drivers.append(f"{_fmt_usd(dossier.budget_gap_usd)} over the approved budget")
+        if dossier.has_shelfware:
+            drivers.append(f"{dossier.utilization_pct}% seat utilization ({dossier.inactive_seats:,} inactive seats)")
+        if dossier.performance_rating != "Good":
+            drivers.append(
+                f"performance rated {dossier.performance_rating} ({dossier.actual_uptime}% uptime vs {dossier.contracted_uptime}% contracted, "
+                f"{dossier.support_sla_achievement}% support SLA, {dossier.critical_incidents_count} critical incidents)"
+            )
+        if dossier.added_modules:
+            drivers.append(f"new modules bundled into the renewal ({', '.join(dossier.added_modules)})")
+        if dossier.renewal_type == "EXPANSION" and dossier.has_shelfware:
+            drivers.append(f"+{dossier.seat_change:,} seat expansion despite idle seats")
+        dossier.decision_drivers = drivers
 
         # ----------------------------------------------------
         # Gate G1: Primary Strategic Recommendation Gate
         # ----------------------------------------------------
         is_switch_candidate = (dossier.increase_pct >= 30.0) or (dossier.uptime_gap > 0.5 and dossier.performance_rating == "Needs Improvement" and dossier.increase_pct >= 20.0)
-        is_renew_candidate = (dossier.increase_pct <= 5.0 and dossier.performance_rating == "Good" and dossier.budget_gap_usd <= 0)
+        is_renew_candidate = (dossier.increase_pct <= 5.0 and dossier.performance_rating == "Good"
+                              and dossier.budget_gap_usd <= 0 and not dossier.cap_breach)
 
         if is_switch_candidate:
             routing_decision = "ROUTE_SWITCH_BENCHMARK"
@@ -143,8 +233,37 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             "StrategicDecisionRoutingGate",
             passed=True,
             decision=routing_decision,
-            details=f"Increase: +{dossier.increase_pct}%, Rating: {dossier.performance_rating}, Budget Gap: ${dossier.budget_gap_usd:,.0f}"
+            details=f"Increase: +{dossier.increase_pct}%, Rating: {dossier.performance_rating}, Budget Gap: {_fmt_usd(dossier.budget_gap_usd)}, Cap breach: {dossier.cap_breach}"
         )
+
+        # ----------------------------------------------------
+        # Gate G2: Switching-Cost Gate
+        # A switch driven by price alone is downgraded to renegotiate when the vendor is hard to replace.
+        # ----------------------------------------------------
+        replacement_difficulty = internal["replacement_difficulty"]
+        migration_months = internal["migration_estimate_months"]
+        dossier.hard_to_replace = (replacement_difficulty.strip().lower() in HARD_TO_REPLACE_LEVELS
+                                   or migration_months >= LONG_MIGRATION_MONTHS)
+        dossier.switch_downgraded = (routing_decision == "ROUTE_SWITCH_BENCHMARK"
+                                     and dossier.hard_to_replace
+                                     and dossier.performance_rating != "Needs Improvement")
+        if dossier.switch_downgraded:
+            routing_decision = "ROUTE_RENEGOTIATE"
+            g2_decision = "DOWNGRADE_TO_RENEGOTIATE"
+        elif dossier.hard_to_replace:
+            g2_decision = "HARD_TO_REPLACE_NOTED"
+        else:
+            g2_decision = "SWITCHING_FEASIBLE"
+        self.record_gate(
+            "G2",
+            "SwitchingCostGate",
+            passed=True,
+            decision=g2_decision,
+            details=f"Replacement difficulty: {replacement_difficulty}, migration estimate: {migration_months} months, rating: {dossier.performance_rating}"
+        )
+
+        drivers_text = "; ".join(drivers)
+        notice_obj = self._notice_objective(dossier)
 
         # ----------------------------------------------------
         # Action A4: Build "Renew" Strategic Package
@@ -152,25 +271,34 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         if routing_decision == "ROUTE_RENEW":
             def action_a4():
                 dossier.primary_decision = "Renew"
+                headroom = -dossier.budget_gap_usd
                 dossier.decision_rationale = (
-                    f"Vendor continues to demonstrate strong operational excellence with high SLA achievement ({dossier.actual_uptime}% uptime). "
-                    f"The proposed price adjustment of +{dossier.increase_pct}% is modest, falls within approved budget, "
-                    "and locking in the proposed term provides commercial stability."
+                    f"Performance rated Good: {dossier.actual_uptime}% uptime vs {dossier.contracted_uptime}% contracted, "
+                    f"{dossier.support_sla_achievement}% support SLA and {dossier.critical_incidents_count} critical incidents. "
+                    f"The +{dossier.increase_pct}% increase is in line with history ({dossier.historical_avg_increase_pct}% average) "
+                    f"and leaves {_fmt_usd(headroom)} of budget headroom, with {dossier.utilization_pct}% of seats in active use."
                 )
+                if dossier.price_cap_pct is not None:
+                    dossier.decision_rationale += f" The increase is within the contractual {dossier.price_cap_pct:g}% cap."
                 dossier.strategic_options = [
                     {"option": "Renew as-is", "assessment": "Preferred (commercially fair and operationally stable)"},
                     {"option": "Renegotiate", "assessment": "Optional (explore minor volume rebate or multi-year prepay discount)"},
-                    {"option": "Restructure licenses", "assessment": "Not required (adoption remains above 90% threshold)"},
-                    {"option": "Benchmark alternatives", "assessment": "Low priority (switching costs outweigh any marginal savings)"},
-                    {"option": "Switch vendor", "assessment": "Not recommended (high disruption risk for an already well-performing vendor)"}
+                    {"option": "Restructure licenses", "assessment": f"Not required ({dossier.utilization_pct}% adoption is above the 90% threshold)"},
+                    {"option": "Benchmark alternatives", "assessment": f"Low priority (replacement difficulty {replacement_difficulty}, ~{migration_months}-month migration)"},
+                    {"option": "Switch vendor", "assessment": "Not recommended (high disruption risk for a well-performing vendor)"}
                 ]
-                dossier.negotiation_objectives = [
-                    f"Execute renewal at proposed ${dossier.proposed_acv:,.0f} ACV, locking in multi-year price protection.",
+                objectives = [
+                    f"Execute renewal at proposed {_fmt_usd(dossier.proposed_acv)} ACV, locking in multi-year price protection.",
                     "Verify that all current security, compliance, and support addenda automatically carry over.",
-                    "Include standard SLA protection guaranteeing >= 99.9% availability with financial remedies.",
+                    f"Keep SLA protection at >= {dossier.contracted_uptime}% availability with financial remedies.",
                     "Secure an annual true-up mechanism allowing license expansion at the same locked-in unit price."
                 ]
-                dossier.fallback_strategy = "If vendor attempts last-minute commercial alterations, negotiate a 1-year bridge extension at the current rate."
+                if dossier.added_modules:
+                    objectives.append(f"Get {', '.join(dossier.added_modules)} quoted as a separate optional line item, not bundled into the renewal.")
+                if dossier.notice_passed and not dossier.auto_renewal:
+                    objectives.insert(0, f"Sign before term end ({dossier.renewal_deadline}); there is no auto-renewal and the notice window has closed.")
+                dossier.negotiation_objectives = objectives
+                dossier.fallback_strategy = "If the vendor attempts last-minute commercial changes, negotiate a 1-year bridge extension at the current rate."
                 return "Configured RENEW strategic package"
             self.execute_action("A4", "BuildRenewStrategyPackage", action_a4)
         else:
@@ -182,30 +310,52 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         if routing_decision == "ROUTE_RENEGOTIATE":
             def action_a5():
                 dossier.primary_decision = "Renegotiate"
-                dossier.decision_rationale = (
-                    f"Vendor remains functionally core, but proposed +{dossier.increase_pct}% increase exceeds performance delivery. "
-                    f"Underutilization ({dossier.reduction_opportunity:,} inactive seats) and SLA gaps "
-                    "provide strong commercial leverage to counter-offer."
-                )
+                rationale = f"Vendor remains functionally core, but the proposal does not meet renewal criteria. Drivers: {drivers_text}."
+                if dossier.switch_downgraded:
+                    rationale += (f" The price increase alone would justify switching, but replacement difficulty is {replacement_difficulty} "
+                                  f"(~{migration_months}-month migration) and performance is {dossier.performance_rating}, "
+                                  "so a competitive benchmark is used as leverage instead of an immediate switch.")
+                dossier.decision_rationale = rationale
+
+                renew_as_is = (f"Not recommended (creates {_fmt_usd(dossier.budget_gap_usd)} budget gap)" if dossier.budget_gap_usd > 0
+                               else f"Not recommended (accepts +{dossier.increase_pct}% without concessions)")
                 dossier.strategic_options = [
-                    {"option": "Renew as-is", "assessment": f"Not recommended (creates ${dossier.budget_gap_usd:,.0f} budget gap & locks in shelfware)"},
-                    {"option": "Renegotiate", "assessment": f"Preferred (counter-target ${dossier.negotiation_target_acv:,.0f} ACV with restructured seats)"},
-                    {"option": "Restructure licenses", "assessment": f"Recommended (right-size from {dossier.total_provisioned_seats:,} to {dossier.recommended_seats:,} seats)"},
+                    {"option": "Renew as-is", "assessment": renew_as_is},
+                    {"option": "Renegotiate", "assessment": f"Preferred (counter-target {_fmt_usd(dossier.negotiation_target_acv)} ACV)"},
+                    {"option": "Restructure licenses",
+                     "assessment": (f"Recommended (right-size from {dossier.total_provisioned_seats:,} to {dossier.recommended_seats:,} seats)"
+                                    if dossier.has_shelfware else f"Not required ({dossier.utilization_pct}% adoption)")},
                     {"option": "Benchmark alternatives", "assessment": "Recommended (parallel evaluation to maintain negotiation leverage)"},
-                    {"option": "Switch vendor immediately", "assessment": "Not yet justified (migration overhead exceeds current savings potential)"}
+                    {"option": "Switch vendor immediately",
+                     "assessment": (f"Not justified (replacement difficulty {replacement_difficulty}, ~{migration_months}-month migration)"
+                                    if dossier.hard_to_replace else "Not yet justified (migration overhead exceeds current savings potential)")}
                 ]
-                
-                credit_str = f"${dossier.service_credits_available:,.0f}" if dossier.service_credits_available > 0 else "contractual remedies"
-                dossier.negotiation_objectives = [
-                    f"Right-size license commitment to {dossier.recommended_seats:,} seats (releasing ~{dossier.reduction_opportunity:,} inactive licenses).",
-                    f"Reject the {dossier.increase_pct}% escalation and establish counter-target at ${dossier.negotiation_target_acv:,.0f} ACV.",
-                    f"Apply eligible SLA outage penalty credits ({credit_str}) against Year 1 invoicing.",
-                    "Institute enforceable service credit thresholds for future availability drops below contracted target.",
-                    "Introduce contract flexibility clause permitting annual ±10% seat volume adjustments.",
-                    "Secure price-protection cap (maximum 3% annual escalation) for future renewal cycles."
-                ]
-                dossier.fallback_strategy = "If vendor rejects commercial restructuring and maintains the price hike, issue conditional notice of non-renewal prior to the cutoff while fast-tracking an RFP with short-listed alternatives."
-                return "Configured RENEGOTIATE strategic package"
+
+                objectives: List[str] = []
+                if dossier.notice_passed or dossier.notice_at_risk:
+                    objectives.append(notice_obj)
+                if dossier.cap_breach:
+                    objectives.append(f"Enforce the contractual {dossier.price_cap_pct:g}% price-increase cap: maximum ACV {_fmt_usd(dossier.capped_acv)} "
+                                      f"(vendor asked +{dossier.increase_pct}%).")
+                if dossier.increase_pct > 5.0 or dossier.budget_gap_usd > 0:
+                    objectives.append(f"Reject the +{dossier.increase_pct}% escalation and counter at {_fmt_usd(dossier.negotiation_target_acv)} ACV.")
+                if dossier.has_shelfware:
+                    objectives.append(f"Right-size license commitment to {dossier.recommended_seats:,} seats (releasing ~{dossier.reduction_opportunity:,} inactive licenses).")
+                if dossier.renewal_type == "EXPANSION" and dossier.has_shelfware:
+                    objectives.append(f"Decline the proposed +{dossier.seat_change:,} seat expansion until current seats are in use.")
+                if dossier.added_modules:
+                    objectives.append(f"Unbundle {', '.join(dossier.added_modules)} from the renewal and price it separately, or remove it.")
+                if dossier.service_credits_available > 0:
+                    objectives.append(f"Apply {_fmt_usd(dossier.service_credits_available)} of unclaimed SLA service credits against Year 1 invoicing.")
+                if dossier.performance_rating != "Good":
+                    objectives.append(f"Institute enforceable service credits for availability below {dossier.contracted_uptime}% and support SLA misses.")
+                objectives.append("Introduce a contract flexibility clause permitting annual ±10% seat volume adjustments.")
+                objectives.append("Secure a price-protection cap (maximum 3% annual escalation) for future renewal cycles.")
+                dossier.negotiation_objectives = objectives
+
+                dossier.fallback_strategy = self._notice_fallback(
+                    dossier, "Hold the counter-target and keep the benchmark running in parallel.")
+                return "Configured RENEGOTIATE strategic package" + (" (downgraded from SWITCH by switching-cost gate)" if dossier.switch_downgraded else "")
             self.execute_action("A5", "BuildRenegotiateStrategyPackage", action_a5)
         else:
             self.skip_action("A5", "BuildRenegotiateStrategyPackage", f"Proposal routed to alternative decision ({routing_decision}).")
@@ -216,52 +366,128 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         if routing_decision == "ROUTE_SWITCH_BENCHMARK":
             def action_a6():
                 dossier.primary_decision = "Switch / Benchmark"
-                dossier.decision_rationale = (
-                    f"The vendor's +{dossier.increase_pct}% price increase is commercially unviable and creates a substantial "
-                    f"${dossier.budget_gap_usd:,.0f} budget overrun. Combined with chronic SLA underperformance, an immediate "
-                    "competitive RFP and notice of non-renewal is strongly warranted."
-                )
+                rationale = f"The proposal is not commercially or operationally viable. Drivers: {drivers_text}."
+                if dossier.hard_to_replace:
+                    rationale += (f" Replacement difficulty is {replacement_difficulty} (~{migration_months}-month migration), "
+                                  "but performance is too poor to justify staying on these terms.")
+                rationale += " A competitive RFP is warranted, with the incumbent kept in the process only on reset terms."
+                dossier.decision_rationale = rationale
                 dossier.strategic_options = [
-                    {"option": "Renew as-is", "assessment": "Strongly Rejected (causes unacceptable budget deficit & condones poor SLA)"},
+                    {"option": "Renew as-is", "assessment": "Strongly Rejected (unacceptable cost and/or service terms)"},
                     {"option": "Renegotiate", "assessment": "Last Resort (only if vendor concedes to baseline pricing and strict SLA penalties)"},
-                    {"option": "Restructure licenses", "assessment": "Required if staying (reclaim unused seats immediately)"},
+                    {"option": "Restructure licenses",
+                     "assessment": "Required if staying (reclaim unused seats immediately)" if dossier.has_shelfware else "Not a lever (adoption is healthy)"},
                     {"option": "Benchmark alternatives", "assessment": "Mandatory (launch competitive market tender with short-listed alternatives)"},
-                    {"option": "Switch vendor immediately", "assessment": "Preferred / High Priority (initiate formal migration evaluation)"}
+                    {"option": "Switch vendor", "assessment": f"Preferred (initiate formal migration evaluation, ~{migration_months}-month effort)"}
                 ]
-                dossier.negotiation_objectives = [
-                    "Issue formal conditional Notice of Non-Renewal prior to contractual notice deadline to preserve exit rights.",
-                    f"Issue aggressive counter-target of ${dossier.negotiation_target_acv:,.0f} ACV (rejecting the {dossier.increase_pct}% price hike completely).",
-                    f"If staying, cut license volume to {dossier.recommended_seats:,} seats (shedding {dossier.reduction_opportunity:,} unused seats).",
-                    "Incorporate a 6-month transition assistance SLA clause ensuring zero data-export or exit penalties.",
-                    "Parallel-track technical discovery with alternative platforms to demonstrate viable walk-away posture."
-                ]
-                dossier.fallback_strategy = "If vendor refuses to roll back price increases to baseline and restore SLA commitments, execute migration plan to alternative vendor upon current contract expiration."
+                objectives = [notice_obj]
+                objectives.append(f"Counter at {_fmt_usd(dossier.negotiation_target_acv)} ACV, rejecting the +{dossier.increase_pct}% increase.")
+                if dossier.cap_breach:
+                    objectives.append(f"Enforce the contractual {dossier.price_cap_pct:g}% cap (maximum {_fmt_usd(dossier.capped_acv)} ACV) if any extension is needed.")
+                if dossier.has_shelfware:
+                    objectives.append(f"If staying, cut license volume to {dossier.recommended_seats:,} seats (shedding {dossier.reduction_opportunity:,} unused seats).")
+                if dossier.added_modules:
+                    objectives.append(f"Refuse bundled additions ({', '.join(dossier.added_modules)}).")
+                objectives.append("Incorporate a 6-month transition assistance clause ensuring zero data-export or exit penalties.")
+                objectives.append("Parallel-track technical discovery with alternative platforms to demonstrate a viable walk-away posture.")
+                dossier.negotiation_objectives = objectives
+                dossier.fallback_strategy = self._notice_fallback(
+                    dossier, "Run the RFP to completion and keep the incumbent only if it matches baseline pricing and restores SLA commitments.",
+                    exit_action="execute the migration to the selected alternative at contract expiry")
                 return "Configured SWITCH / BENCHMARK strategic package"
             self.execute_action("A6", "BuildSwitchStrategyPackage", action_a6)
         else:
             self.skip_action("A6", "BuildSwitchStrategyPackage", f"Proposal routed to alternative decision ({routing_decision}).")
 
         # ----------------------------------------------------
-        # Action A7: Assemble Final Executive Brief
+        # Action A7: Build Decision-Specific Execution Timeline
         # ----------------------------------------------------
         def action_a7():
+            alternatives_text = (
+                ", ".join(dossier.known_alternatives)
+                if dossier.known_alternatives
+                else "none listed in the internal assessment"
+            )
+            if dossier.primary_decision == "Renew":
+                duration = "1–2 weeks"
+                steps = [
+                    {"phase": "Financial and usage validation", "duration": "2–3 working days", "owners": ["Procurement", "Finance", "IT"], "description": "Confirm invoice, seat count and unit price match the proposal."},
+                    {"phase": "Terms carry-over check", "duration": "2–3 working days", "owners": ["Legal", "IT"], "description": "Confirm active addenda, SLA remedies and price protection carry into the new term."},
+                    {"phase": "Final approval and contract execution", "duration": "2–5 working days", "owners": ["Legal", "Finance", "IT leadership"], "description": "Approve within budget authority and execute the renewal."},
+                ]
+            elif dossier.primary_decision == "Renegotiate":
+                duration = "4–6 weeks"
+                steps = [
+                    {"phase": "Financial and usage validation", "duration": "2–3 working days", "owners": ["Procurement", "Finance", "IT"], "description": "Validate invoices, license activity, unit pricing and future demand."},
+                    {"phase": "Market and alternative benchmarking", "duration": "3–5 working days", "owners": ["Procurement", "IT"], "description": f"Benchmark competing vendors ({alternatives_text}) to build leverage."},
+                    {"phase": "Stakeholder and technical assessment", "duration": "3–5 working days", "owners": ["Business owners", "IT", "Security"], "description": "Confirm business dependency, product gaps, security requirements and roadmap priorities."},
+                    {"phase": "Negotiation preparation", "duration": "1–2 working days", "owners": ["Procurement", "Finance"], "description": "Set counter-target, fallback position, levers and approval limits."},
+                    {"phase": "Vendor negotiation", "duration": "1–3 weeks", "owners": ["Procurement", "Vendor management"], "description": "Negotiate pricing, licensing, service levels and commercial protections."},
+                    {"phase": "Final approval and contract execution", "duration": "2–5 working days", "owners": ["Legal", "Finance", "IT leadership"], "description": "Validate negotiated terms, approve and execute."},
+                ]
+            else:
+                duration = "8–12 weeks"
+                steps = [
+                    {"phase": "Requirements and RFP preparation", "duration": "1–2 weeks", "owners": ["IT", "Procurement", "Business owners"], "description": "Document requirements and short-list alternatives."},
+                    {"phase": "Competitive RFP", "duration": "2–3 weeks", "owners": ["Procurement"], "description": f"Run tender with {alternatives_text}; incumbent invited on reset terms only."},
+                    {"phase": "Proof of concept and migration sizing", "duration": "3–4 weeks", "owners": ["IT", "Security"], "description": f"Validate the leading alternative and size the ~{migration_months}-month migration."},
+                    {"phase": "Final negotiation (alternative vs incumbent)", "duration": "1–2 weeks", "owners": ["Procurement", "Finance"], "description": "Compare best-and-final offers on 3-year total cost."},
+                    {"phase": "Selection, approval and migration plan", "duration": "1 week", "owners": ["IT leadership", "Finance", "Legal"], "description": "Approve the selected vendor and sign off the transition plan."},
+                ]
+
+            # Notice-driven first step
+            if dossier.notice_passed:
+                steps.insert(0, {"phase": "Exit-options review (notice missed)", "duration": "Immediately", "owners": ["Legal", "Procurement"],
+                                 "description": f"Notice deadline {dossier.notice_deadline} has passed. Confirm termination rights and bridge or early-exit options before term end {dossier.renewal_deadline}."})
+            elif dossier.notice_at_risk and dossier.primary_decision != "Renew":
+                steps.insert(0, {"phase": "Serve conditional non-renewal notice", "duration": "Immediately", "owners": ["Legal", "Procurement"],
+                                 "description": f"Due by {dossier.notice_deadline} ({dossier.days_to_notice} days left). Preserves exit rights while negotiation continues."})
+
+            notice_label = (f"Notice deadline ({dossier.notice_period_days} days) — MISSED" if dossier.notice_passed
+                            else f"Notice deadline ({dossier.notice_period_days} days)")
+            dossier.timeline = {
+                "total_duration": duration,
+                "steps": steps,
+                "milestones": [
+                    {"milestone": "Assessment initiated", "date": dossier.as_of.isoformat(), "critical": False},
+                    {"milestone": notice_label, "date": dossier.notice_deadline, "critical": True},
+                    {"milestone": "Contract renewal", "date": dossier.renewal_deadline, "critical": False}
+                ]
+            }
+            return f"{dossier.primary_decision} timeline: {len(steps)} phases, {duration}"
+
+        self.execute_action("A7", "BuildExecutionTimeline", action_a7)
+
+        # ----------------------------------------------------
+        # Action A8: Assemble Final Executive Brief
+        # ----------------------------------------------------
+        def action_a8():
             dossier.brief = {
                 "meta": {
                     "case_id": dossier.case_id,
-                    "assessment_date": raw.get("assessment_date", "2026-11-18"),
+                    "assessment_date": dossier.as_of.isoformat(),
                     "renewal_deadline": dossier.renewal_deadline,
                     "notice_deadline": dossier.notice_deadline,
                     "notice_days": dossier.notice_period_days,
+                    "days_to_notice": dossier.days_to_notice,
                     "current_term_months": dossier.current_term_months,
                     "notice_at_risk": dossier.notice_at_risk,
+                    "notice_passed": dossier.notice_passed,
+                    "notice_status": dossier.notice_status,
+                    "auto_renewal": dossier.auto_renewal,
+                    "renewal_type": dossier.renewal_type,
                     "decision": dossier.primary_decision,
+                    "decision_question": dossier.decision_question,
+                    "success_criteria": dossier.success_criteria,
                     "confidentiality": "CONFIDENTIAL · EXECUTIVE BRIEF"
                 },
                 "vendor": {
                     "name": dossier.vendor_name,
                     "service": dossier.service_type,
                     "proposed_term_months": dossier.proposed_term_months,
-                    "account_manager": raw.get("vendor", {}).get("account_manager", "N/A")
+                    "account_manager": raw["vendor"]["account_manager"],
+                    "replacement_difficulty": replacement_difficulty,
+                    "migration_estimate_months": migration_months,
                 },
                 "financials": {
                     "current_acv": dossier.current_acv,
@@ -273,7 +499,10 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                     "three_year_proposal": dossier.three_year_proposal,
                     "three_year_target": dossier.three_year_target,
                     "approved_budget_acv": dossier.approved_budget_acv,
-                    "budget_gap_usd": dossier.budget_gap_usd
+                    "budget_gap_usd": dossier.budget_gap_usd,
+                    "price_cap_pct": dossier.price_cap_pct,
+                    "cap_breach": dossier.cap_breach,
+                    "capped_acv": dossier.capped_acv
                 },
                 "seats": {
                     "total": dossier.total_provisioned_seats,
@@ -284,7 +513,11 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                     "reduction_opportunity": dossier.reduction_opportunity,
                     "annualized_exposure_usd": dossier.annualized_waste_usd,
                     "current_unit_price": dossier.current_unit_price,
-                    "proposed_unit_price": dossier.proposed_unit_price
+                    "proposed_unit_price": dossier.proposed_unit_price,
+                    "proposed_seats": dossier.proposed_seats,
+                    "seat_change": dossier.seat_change,
+                    "added_modules": dossier.added_modules,
+                    "removed_modules": dossier.removed_modules
                 },
                 "history_trend": {
                     "previous_increases": dossier.previous_cycles,
@@ -313,33 +546,18 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                 "recommendation": {
                     "primary": dossier.primary_decision,
                     "rationale": dossier.decision_rationale,
+                    "drivers": dossier.decision_drivers,
+                    "switch_downgraded": dossier.switch_downgraded,
                     "options": dossier.strategic_options,
                     "negotiation_objectives": dossier.negotiation_objectives,
                     "fallback": dossier.fallback_strategy
                 },
-                "timeline": {
-                    "total_duration": "4–6 weeks",
-                    "steps": [
-                        {"phase": "Financial and usage validation", "duration": "2–3 working days", "owners": ["Procurement", "Finance", "IT"], "description": "Validate invoices, license activity, unit pricing and future demand."},
-                        {"phase": "Market and alternative benchmarking", "duration": "3–5 working days", "owners": ["Procurement", "IT"], "description": f"Identify competing vendors ({', '.join(dossier.known_alternatives) or 'market standard'}) and switching complexity."},
-                        {"phase": "Stakeholder and technical assessment", "duration": "3–5 working days", "owners": ["Business owners", "IT", "Security"], "description": "Confirm business dependency, product gaps, security requirements and roadmap priorities."},
-                        {"phase": "Negotiation preparation", "duration": "1–2 working days", "owners": ["Procurement", "Finance"], "description": "Establish target price, fallback position, negotiation levers and approval limits."},
-                        {"phase": "Vendor negotiation", "duration": "1–3 weeks", "owners": ["Procurement", "Vendor management"], "description": "Negotiate pricing, licensing, service levels and commercial protections."},
-                        {"phase": "Final approval and contract execution", "duration": "2–5 working days", "owners": ["Legal", "Finance", "IT leadership"], "description": "Validate negotiated terms, approve the final proposal and execute the renewal."}
-                    ],
-                    "milestones": [
-                        {"milestone": "Assessment initiated", "date": raw.get("assessment_date", "2026-11-18"), "critical": False},
-                        {"milestone": "Negotiation begins", "date": "2026-11-25", "critical": False},
-                        {"milestone": f"Notice deadline ({dossier.notice_period_days} days)", "date": dossier.notice_deadline, "critical": True},
-                        {"milestone": "Target decision", "date": "2026-12-15", "critical": False},
-                        {"milestone": "Contract renewal", "date": dossier.renewal_deadline, "critical": False}
-                    ]
-                },
+                "timeline": dossier.timeline,
                 "sla_addendum_flags": dossier.addenda_flags
             }
             return f"Assembled executive brief with {len(dossier.brief)} sections"
 
-        self.execute_action("A7", "AssembleFinalDecisionBrief", action_a7)
+        self.execute_action("A8", "AssembleFinalDecisionBrief", action_a8)
 
         return MoveTrace(
             move_id=self.move_id,
@@ -348,5 +566,5 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             status="COMPLETE",
             actions=self.action_traces,
             gates=self.gate_traces,
-            summary=f"Synthesized decision: {dossier.primary_decision} (Risk: {dossier.risk_level}, Target: ${dossier.negotiation_target_acv:,.0f})."
+            summary=f"Synthesized decision: {dossier.primary_decision} (Risk: {dossier.risk_level}, Target: {_fmt_usd(dossier.negotiation_target_acv)})."
         )

@@ -16,7 +16,7 @@ const ALL_STATES = [
 
 // Formatting Helpers
 const fmtCurrency = (val) => {
-  if (val === undefined || val === null) return "$0.00";
+  if (val === undefined || val === null) return "—";
   if (val >= 1000000) {
     return `$${(val / 1000000).toFixed(2)}M`;
   }
@@ -24,7 +24,7 @@ const fmtCurrency = (val) => {
 };
 
 const fmtPct = (val) => {
-  if (val === undefined || val === null) return "0%";
+  if (val === undefined || val === null) return "—";
   return `${val > 0 ? "+" : ""}${val}%`;
 };
 
@@ -60,6 +60,13 @@ function setupEventListeners() {
       loadCaseBrief(e.target.value);
     }
   });
+
+  const asOfInput = document.getElementById("asOfInput");
+  if (asOfInput) {
+    asOfInput.addEventListener("change", () => {
+      if (caseSelect.value) loadCaseBrief(caseSelect.value);
+    });
+  }
 
   reloadBtn.addEventListener("click", () => {
     if (caseSelect.value) {
@@ -109,8 +116,12 @@ function setupEventListeners() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename: file.name, data: parsed })
         });
-        if (!res.ok) throw new Error("Server rejected JSON file");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || "Server rejected JSON file");
+        }
         const resp = await res.json();
+        alert(`Uploaded "${resp.original_filename}" as ${resp.case_id} (${resp.renewal_id})`);
 
         // Refresh case list and immediately display the uploaded case
         await loadCaseList(resp.case_id);
@@ -162,7 +173,9 @@ async function loadCaseList(preferredCaseId = null) {
 async function loadCaseBrief(caseId) {
   renderPipelineRunning();
   try {
-    const res = await fetch(`${API_BASE}/api/case/${caseId}`);
+    const asOf = document.getElementById("asOfInput")?.value;
+    const query = asOf ? `?as_of=${encodeURIComponent(asOf)}` : "";
+    const res = await fetch(`${API_BASE}/api/case/${encodeURIComponent(caseId)}${query}`);
     if (!res.ok) {
       const errData = await res.json();
       throw new Error(errData.detail || "Error evaluating case");
@@ -236,12 +249,12 @@ function renderBrief(data) {
   const flags = data.sla_addendum_flags || [];
 
   // 1. Header & Quick KPIs
-  document.getElementById("briefDocTitle").textContent = `${vendor.name || 'Vendor'} — Executive Decision Brief`;
-  document.getElementById("serviceSubtitle").textContent = `${vendor.service || 'SaaS Platform'} Renewal Assessment · ${meta.case_id || ''}`;
+  document.getElementById("briefDocTitle").textContent = `${vendor.name ?? '—'} — Executive Decision Brief`;
+  document.getElementById("serviceSubtitle").textContent = `${vendor.service ?? '—'} Renewal Assessment · ${meta.case_id ?? '—'}`;
   
   const decisionValueEl = document.getElementById("mainDecisionValue");
   const decisionBox = document.getElementById("decisionPillBox");
-  decisionValueEl.textContent = rec.primary || meta.decision || "Renegotiate";
+  decisionValueEl.textContent = rec.primary ?? "—";
   
   decisionBox.className = "decision-box";
   const decLower = (rec.primary || "").toLowerCase();
@@ -250,27 +263,32 @@ function renderBrief(data) {
 
   // KPI Tiles
   document.getElementById("kpiCurrentAcv").textContent = fmtCurrency(fin.current_acv);
-  document.getElementById("kpiCurrentSeats").textContent = `${seats.total || 0} provisioned seats`;
+  document.getElementById("kpiCurrentSeats").textContent = `${seats.total ?? '—'} provisioned seats`;
   
   document.getElementById("kpiProposedAcv").textContent = fmtCurrency(fin.proposed_acv);
   document.getElementById("kpiIncreasePct").textContent = `${fmtPct(fin.increase_pct)} proposed increase`;
 
   document.getElementById("kpiTargetAcv").textContent = fmtCurrency(fin.negotiation_target_acv);
-  const potentialSavings = (fin.proposed_acv || 0) - (fin.negotiation_target_acv || 0);
+  const potentialSavings = (fin.proposed_acv != null && fin.negotiation_target_acv != null) ? fin.proposed_acv - fin.negotiation_target_acv : null;
   document.getElementById("kpiSavingsTarget").textContent = `${fmtCurrency(potentialSavings)} targeted reduction`;
 
   document.getElementById("kpiNoticeDeadline").textContent = meta.notice_deadline || "—";
-  document.getElementById("kpiNoticeDaysRemaining").textContent = meta.notice_at_risk 
-    ? "⚠️ Imminent Notice Deadline" 
-    : `${meta.notice_days || 60} days required notice`;
-  if (meta.notice_at_risk) {
-    document.getElementById("kpiNoticeDaysRemaining").classList.add("alert-text");
+  const noticeEl = document.getElementById("kpiNoticeDaysRemaining");
+  if (meta.notice_passed) {
+    noticeEl.textContent = meta.auto_renewal
+      ? `⛔ Missed ${Math.abs(meta.days_to_notice)} days ago — auto-renews`
+      : `⛔ Notice window closed ${Math.abs(meta.days_to_notice)} days ago`;
+  } else if (meta.notice_at_risk) {
+    noticeEl.textContent = `⚠️ Imminent: ${meta.days_to_notice} days left`;
+  } else {
+    noticeEl.textContent = `${meta.days_to_notice ?? '—'} days left (${meta.notice_days ?? '—'}-day notice)`;
   }
+  noticeEl.classList.toggle("alert-text", Boolean(meta.notice_passed || meta.notice_at_risk));
 
   // Metadata Strip
   document.getElementById("metaVendorName").textContent = vendor.name || "—";
   document.getElementById("metaServiceName").textContent = vendor.service || "—";
-  document.getElementById("metaTerm").textContent = `${vendor.proposed_term_months || 36} months proposed`;
+  document.getElementById("metaTerm").textContent = `${vendor.proposed_term_months ?? '—'} months proposed`;
   document.getElementById("metaRenewalDeadline").textContent = meta.renewal_deadline || "—";
   document.getElementById("metaAssessmentDate").textContent = meta.assessment_date || "—";
 
@@ -278,12 +296,51 @@ function renderBrief(data) {
   document.getElementById("execDecisionHeading").textContent = `Executive Decision: ${rec.primary} before commitment`;
   document.getElementById("execDecisionRationale").textContent = rec.rationale || "—";
 
+  // Renewal-type tags: what kind of renewal this is and which special paths fired
+  const tags = [];
+  const typeLabel = { EXPANSION: "Seat expansion", REDUCTION: "Seat reduction", FLAT: "Flat seat volume" }[meta.renewal_type];
+  if (typeLabel) tags.push({ text: `${typeLabel} (${seats.proposed_seats ?? '—'} seats)`, cls: meta.renewal_type === "EXPANSION" ? "warn" : "" });
+  tags.push({ text: meta.auto_renewal ? "Auto-renewal" : "Manual renewal", cls: "" });
+  const noticeTag = {
+    AUTO_RENEWED_LOCK_IN: { text: "Notice missed: auto-renew lock-in", cls: "high" },
+    NOTICE_WINDOW_CLOSED: { text: "Notice window closed", cls: "warn" },
+    IMMINENT_RISK: { text: `Notice due in ${meta.days_to_notice} days`, cls: "high" },
+    ADEQUATE_RUNWAY: { text: `${meta.days_to_notice} days to notice`, cls: "" },
+  }[meta.notice_status];
+  if (noticeTag) tags.push(noticeTag);
+  if (fin.cap_breach) tags.push({ text: `Breaches ${fin.price_cap_pct}% price cap`, cls: "high" });
+  if ((seats.added_modules || []).length) tags.push({ text: `+ ${seats.added_modules.join(", ")}`, cls: "warn" });
+  if (rec.switch_downgraded) tags.push({ text: "Switch downgraded: hard to replace", cls: "warn" });
+  const tagsEl = document.getElementById("execDecisionTags");
+  tagsEl.innerHTML = "";
+  tags.forEach(t => {
+    const span = document.createElement("span");
+    span.className = `decision-tag ${t.cls}`.trim();
+    span.textContent = t.text;
+    tagsEl.appendChild(span);
+  });
+
+  // Decision drivers: the facts that moved the recommendation away from a clean renewal
+  const driversEl = document.getElementById("execDecisionDrivers");
+  driversEl.innerHTML = "";
+  if ((rec.drivers || []).length) {
+    const title = document.createElement("strong");
+    title.textContent = rec.primary === "Renew" ? "Points to watch:" : "Why this recommendation:";
+    const ul = document.createElement("ul");
+    rec.drivers.forEach(d => {
+      const li = document.createElement("li");
+      li.textContent = d;
+      ul.appendChild(li);
+    });
+    driversEl.append(title, ul);
+  }
+
   // 2. Section 1: Financial Impact
   const finTableBody = document.querySelector("#financialTable tbody");
-  const currentMonths = meta.current_term_months || 12;
-  const proposedMonths = vendor.proposed_term_months || 36;
-  const termDelta = proposedMonths - currentMonths;
-  const termDeltaStr = termDelta > 0 ? `+${termDelta} months extension` : (termDelta === 0 ? "Same duration" : `${termDelta} months`);
+  const currentMonths = meta.current_term_months ?? '—';
+  const proposedMonths = vendor.proposed_term_months ?? '—';
+  const termDelta = (typeof proposedMonths === "number" && typeof currentMonths === "number") ? proposedMonths - currentMonths : null;
+  const termDeltaStr = termDelta === null ? "—" : termDelta > 0 ? `+${termDelta} months extension` : (termDelta === 0 ? "Same duration" : `${termDelta} months`);
 
   finTableBody.innerHTML = `
     <tr>
@@ -302,7 +359,7 @@ function renderBrief(data) {
       <td><strong>Average Per-Seat Cost (Annual)</strong></td>
       <td>$${seats.current_unit_price?.toLocaleString()}</td>
       <td>$${seats.proposed_unit_price?.toLocaleString()}</td>
-      <td>+$${((seats.proposed_unit_price || 0) - (seats.current_unit_price || 0)).toLocaleString()} / seat</td>
+      <td>${(seats.proposed_unit_price != null && seats.current_unit_price != null) ? `+$${(seats.proposed_unit_price - seats.current_unit_price).toLocaleString()} / seat` : "—"}</td>
     </tr>
     <tr>
       <td><strong>Contract Duration</strong></td>
@@ -357,7 +414,7 @@ function renderBrief(data) {
 
   // 4. Section 3: Vendor Performance & SLA
   const perfRatingEl = document.getElementById("perfOverallRating");
-  perfRatingEl.textContent = perf.overall_rating || "Acceptable";
+  perfRatingEl.textContent = perf.overall_rating ?? "—";
   perfRatingEl.className = `status-chip ${perf.overall_rating === 'Good' ? 'good' : 'high'}`;
 
   const perfTableBody = document.querySelector("#perfTable tbody");
@@ -436,7 +493,7 @@ function renderBrief(data) {
   objList.innerHTML = (rec.negotiation_objectives || []).map(o => `<li>${o}</li>`).join("");
 
   // 7. Section 6: Timeline & Milestones
-  document.getElementById("planDurationBadge").textContent = timeline.total_duration || "4–6 Weeks";
+  document.getElementById("planDurationBadge").textContent = timeline.total_duration ?? "—";
 
   const phasesContainer = document.getElementById("timelinePhases");
   phasesContainer.innerHTML = (timeline.steps || []).map(st => `

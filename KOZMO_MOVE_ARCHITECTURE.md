@@ -33,8 +33,8 @@ Unlike a traditional linear state machine (where every state must run sequential
  │           │  (Gates: G1, G2 -> conditionally skips A3..A5)  │
  │           ▼                                                 │
  │   [M10: Model Costs & Recommend]      (Verb: Model)         │
- │              (Gate: G_DECIDE -> Route Renew / Reneg /       │
- │               Switch -> selectively builds A4 / A5 / A6)    │
+ │              (Gates: G1 route + G2 switching cost ->         │
+ │               Renew / Reneg / Switch -> A4 / A5 / A6)       │
  └──────────────────────────────┬──────────────────────────────┘
                                 │
             ┌───────────────────┴───────────────────┐
@@ -120,56 +120,58 @@ The `Dossier` holds cumulative structured facts extracted and computed by each m
   - `G2`: *ExpiredCommitmentsCheck* — evaluates whether legacy clauses carry forward.
 
 ### Move M03: Check Renewal Deadlines (Verb: Verify)
-- **Purpose**: Calculates critical notice cutoffs, detects auto-renewal traps, and raises alerts.
+- **Purpose**: Calculates the notice cutoff, detects auto-renewal traps, and classifies the notice situation.
 - **Actions**:
-  - `A1`: Compute Required Notice Date (`renewal_deadline` minus `notice_days`).
-  - `A2`: Check Auto-Renewal Mechanism (evaluates contract clause).
-  - `A3`: Flag Auto-Renewal Trap Details (*Skipped* if auto-renewal is false).
-  - `A4`: Raise Imminent Notice Risk Alert (*Skipped* if notice runway > 60 days).
+  - `A1`: Extract term end, notice period and auto-renewal flag.
+  - `A2`: Compute notice cutoff (`current_term_end` minus `notice_period_days`) and `days_to_notice` relative to the assessment date (`as_of`).
+  - `A3`: Flag Auto-Renewal Trap (*Skipped* if auto-renewal is false).
+  - `A4`: `GenerateEmergencyNoticeWarning` if 0–21 days remain, or `GenerateMissedNoticeWarning` if the cutoff has passed (*Skipped* otherwise).
 - **Gates**:
-  - `G1`: *AutoRenewalClauseCheck* — gates `A3`.
-  - `G2`: *NoticeRunwaySufficiencyCheck* — gates `A4`.
+  - `G1`: *AutoRenewalClauseCheck* → `AUTO_RENEWAL_ACTIVE` | `MANUAL_RENEWAL_ONLY`.
+  - `G2`: *NoticeUrgencyGate* →
+    - `AUTO_RENEWED_LOCK_IN`: cutoff passed and auto-renewal is on.
+    - `NOTICE_WINDOW_CLOSED`: cutoff passed, no auto-renewal (contract lapses at term end).
+    - `IMMINENT_RISK`: 0–21 days left.
+    - `ADEQUATE_RUNWAY`: more than 21 days left.
 
 ### Move M04: Assess Supplier Performance (Verb: Evaluate)
-- **Purpose**: Audits SLA uptime compliance, incident records, service credits, and roadmap deliveries.
-- **Actions**:
-  - `A1`: Audit SLA Availability & Uptime (`uptime_actual` vs `uptime_contracted`).
-  - `A2`: Audit Support Ticket SLA Achievement.
-  - `A3`: Investigate Production Incidents & Outages (*Skipped* if critical outages = 0).
-  - `A4`: Claim Service Credit Compensation (*Skipped* if unclaimed credits = $0).
-  - `A5`: Audit Product Roadmap Delivery (delays vs contracted deliverables).
-  - `A6`: Score Supplier Overall Performance (Good / Acceptable / Sub-standard).
-- **Gates**:
-  - `G1`: *OutageForensicsGate* — gates `A3`.
-  - `G2`: *ServiceCreditReclamationGate* — gates `A4`.
+- **Purpose**: Audits SLA uptime, support SLA, incidents, service credits and roadmap delivery.
+- **Actions**: `A1` uptime & support SLA, `A2` outage count, `A3` outage impact (*Skipped* if 0 incidents), `A4` surface unclaimed credits (*Skipped* if $0), `A5` roadmap delivery, `A6` rating.
+- **Rating (A6)**:
+  - **Needs Improvement**: uptime gap > 0.15 pts, or support SLA < 75%, or ≥ 3 critical incidents.
+  - **Good**: uptime gap ≤ 0.05 pts, support SLA ≥ 90% and 0 critical incidents.
+  - **Acceptable**: everything else.
+- **Gates**: `G1` *OutageSeverityCheck*, `G2` *ServiceCreditsEligibilityGate*.
 
 ### Move M05: Analyze Usage & License Needs (Verb: Analyze)
-- **Purpose**: Analyzes provisioned seats against active usage, flags shelfware, and calculates right-sized cost exposure.
+- **Purpose**: Analyzes seat usage, flags shelfware, sizes the right seat count, and classifies the renewal by volume and scope.
 - **Actions**:
-  - `A1`: Compute Seat Utilization Rate (`active_seats / total_seats`).
-  - `A2`: Classify Inactive Seat Cohort (90+ day dormant accounts).
-  - `A3`: Detect License Shelfware (*Skipped* if utilization ≥ 90%).
-  - `A4`: Model Right-Sized Baseline (*Skipped* if utilization ≥ 90%).
-  - `A5`: Confirm Optimal Seat Capacity (*Skipped* if shelfware detected).
+  - `A1`: Seat inventory. `A2`: Utilization (`active_seats_last_90_days / total_seats`).
+  - `A3`: Quantify shelfware (recommended seats = active × 1.09) (*Skipped* if utilization ≥ 90%).
+  - `A4`: Model right-sized baseline (*Skipped* if utilization ≥ 90%).
+  - `A5`: Confirm full license retention (*Skipped* if shelfware detected).
+  - `A6`: Challenge scope changes: seat expansion while seats are idle, and modules in the proposal that are not in the current agreement (*Skipped* if neither).
 - **Gates**:
-  - `G1`: *SeatAdoptionHealthyGate* — true if adoption ≥ 90%. Skips `A3` & `A4`.
-  - `G2`: *ShelfwareRemediationGate* — true if inactive seats > 0. Skips `A5`.
+  - `G1`: *ShelfwareDetectionGate* → `SHELFWARE_DETECTED` if utilization < 90%.
+  - `G2`: *RenewalVolumeTypeGate* → `RENEWAL_EXPANSION` | `RENEWAL_REDUCTION` | `RENEWAL_FLAT` (`proposed_seats` vs current `total_seats`).
 
 ### Move M10: Model Costs & Recommend (Verb: Model & Recommend)
-- **Purpose**: Synthesizes facts from M01–M05, benchmarks price asks, evaluates risks, routes strategic decision via gate, and constructs final brief.
+- **Purpose**: Synthesizes M01–M05, models cost exposure, builds the risk register, routes the decision, and assembles the brief.
 - **Actions**:
-  - `A1`: Calculate 3-Year Commercial Exposure (Baseline vs Vendor Proposal vs Target).
-  - `A2`: Benchmark Historical Renewal Trajectory (avg past increase vs current ask).
-  - `A3`: Synthesize Cross-Domain Risk Register (Pricing, Operational, SLA, Notice risks).
-  - `A4_Renew`: Build Renew Strategy Package (*Executed only if decision == RENEW*).
-  - `A5_Renegotiate`: Build Renegotiation Strategy Package (*Executed only if decision == RENEW_WITH_RENEGOTIATION*).
-  - `A6_Switch`: Build Switch / Benchmark Strategy Package (*Executed only if decision == SWITCH_OR_BENCHMARK*).
-  - `A7`: Assemble Final Executive Decision Brief JSON.
+  - `A1`: 3-year exposure and negotiation target. If `msa.price_increase_cap_pct` is set and the increase exceeds it, `cap_breach = true` and the target is capped at `current_acv × (1 + cap)`.
+  - `A2`: Historical benchmark (average past increase vs current ask).
+  - `A3`: Risk register (price, cap breach, shelfware, unsupported expansion, bundled modules, SLA, term lock-in, no termination for convenience, roadmap, notice status). Risk level: ≥ 2 High → High; 1 High → Medium–High.
+  - **Decision drivers**: the list of facts that moved the case away from a clean renewal (increase > 5%, cap breach, over budget, shelfware, rating below Good, bundled modules, unsupported expansion). Rationales are built from this list, not fixed text.
+  - `A4_Renew` / `A5_Renegotiate` / `A6_Switch`: exactly one runs. Options, objectives and fallback are conditional on the case facts and on the M03 notice status.
+  - `A7`: Decision-specific timeline (Renew 1–2 weeks, Renegotiate 4–6 weeks, Switch 8–12 weeks); an immediate notice or exit-options step is added first when notice is imminent or missed.
+  - `A8`: Assemble the brief JSON.
 - **Gates**:
-  - `G_DECIDE`: Strategic Decision Routing Gate:
-    - If `uptime_actual < 99.0%` or `critical_incidents >= 3` ➔ **ROUTE_SWITCH_BENCHMARK** (Executes `A6`, skips `A4`, `A5`).
-    - If `price_increase_pct <= 5.0%` AND `utilization >= 90%` AND `budget_gap <= 0` ➔ **ROUTE_RENEW** (Executes `A4`, skips `A5`, `A6`).
-    - Otherwise (e.g. shelfware, excessive price hike, over budget) ➔ **ROUTE_RENEGOTIATE** (Executes `A5`, skips `A4`, `A6`).
+  - `G1` *StrategicDecisionRoutingGate*:
+    - `ROUTE_SWITCH_BENCHMARK` if increase ≥ 30%, OR (uptime gap > 0.5 pts AND rating Needs Improvement AND increase ≥ 20%).
+    - `ROUTE_RENEW` if increase ≤ 5% AND rating Good AND within budget AND no cap breach.
+    - `ROUTE_RENEGOTIATE` otherwise.
+  - `G2` *SwitchingCostGate*: if routed to Switch, the vendor is hard to replace (`replacement_difficulty` High / Very High / Critical, or `migration_estimate_months` ≥ 12) and the rating is not Needs Improvement, the decision is **downgraded to Renegotiate** (benchmark used as leverage).
+
 
 ---
 

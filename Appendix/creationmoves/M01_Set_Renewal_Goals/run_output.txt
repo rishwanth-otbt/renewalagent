@@ -1,0 +1,147 @@
+
+====================================================================================================
+SCENARIO A - simple renewal review
+====================================================================================================
+                   NEW -> LOADING_CONTEXT        start
+       LOADING_CONTEXT -> FRAMING                A1 5 docs listed, 0 withheld by barrier, missing=[]; G0: no reusable brief
+               FRAMING -> ASSESSING              A2||A3 owner=Priya Shah, perspective=BUYER, signals=[]
+             ASSESSING -> DRAFTING_CRITERIA      A4 nothing left to ask (0 gaps recorded)
+     DRAFTING_CRITERIA -> ASSEMBLING             A7 3 criteria, 2 exclusions
+            ASSEMBLING -> VALIDATING             A8 brief v1 (FULL)
+            VALIDATING -> AWAITING_CONFIRMATION  A9 C1-C7 pass -> G2 AUTHORITATIVE -> G1 ok -> G3 request MSG-001
+ AWAITING_CONFIRMATION -> COMPLETE               G3 confirmed by U-PRIYA -> A10 published DOS-001
+
+FINAL STATE: COMPLETE  
+
+[message to U-PRIYA] Please confirm Review brief v1
+Should Northwind renew Westbrook CRM when its term ends on 30 June 2027, and on what quantity, term and support terms within the approved budget?
+(Will be published as: AUTHORITATIVE)
+
+BRIEF:
+{
+  "status": "CONFIRMED",
+  "confirmed_by": "U-PRIYA",
+  "decision_question": "Should Northwind renew Westbrook CRM when its term ends on 30 June 2027, and on what quantity, term and support terms within the approved budget?",
+  "authorized_actions": [
+    "ANALYZE"
+  ],
+  "exclusions": [
+    "No contact with Westbrook during this Review.",
+    "No change to user accounts."
+  ],
+  "unresolved_authority": [],
+  "recommended_next_moves": [
+    {
+      "move": "M02",
+      "why": "Build the cited agreement baseline from the listed documents."
+    },
+    {
+      "move": "M03",
+      "why": "Verify term end and notice rules; produce the deadline register."
+    },
+    {
+      "move": "M05",
+      "why": "Cost or quantity goals need observed usage."
+    }
+  ],
+  "success_criteria": [
+    "MUST: Annual subscription cost stays below the approved ceiling [< 130,000 USD]",
+    "MUST: Sales team keeps uninterrupted CRM access through the renewal [0 days without access]",
+    "SHOULD: Licence count matches observed need [within 5%]"
+  ],
+  "open_questions": [],
+  "dates": [
+    "SYSTEM_RECORD: Subscription term end (system record; M02/M03 verify) = 2027-06-30"
+  ]
+}
+
+====================================================================================================
+SCENARIO B - complex, solution-phrased request
+====================================================================================================
+                   NEW -> LOADING_CONTEXT        start
+       LOADING_CONTEXT -> FRAMING                A1 5 docs listed, 0 withheld by barrier, missing=[]; G0: no reusable brief
+               FRAMING -> ASSESSING              A2||A3 owner=Mei Lin, perspective=BUYER, signals=['15% off', 'get 15% off', 'negotiate', 'push the sla', 'switch to']
+             ASSESSING -> AWAITING_OWNER         A4 5 gaps -> G1 pass -> A5 asked ['G-AUTH-ACTIONS', 'G-BUDGET', 'G-SCOPE-REPLACE']
+        AWAITING_OWNER -> ASSESSING              A6 3 answers from U-MEI, resolved=['G-AUTH-ACTIONS', 'G-SCOPE-REPLACE']
+             ASSESSING -> AWAITING_OWNER         A4 3 gaps -> G1 pass -> A5 asked ['G-PRIORITY-1']
+        AWAITING_OWNER -> ASSESSING              A6 1 answers from U-MEI, resolved=['G-AUTH-ACTIONS', 'G-PRIORITY-1', 'G-SCOPE-REPLACE']
+             ASSESSING -> DRAFTING_CRITERIA      A4 nothing left to ask (2 gaps recorded)
+     DRAFTING_CRITERIA -> ASSEMBLING             A7 4 criteria, 1 exclusions
+            ASSEMBLING -> VALIDATING             A8 brief v1 (FULL)
+            VALIDATING -> AWAITING_CONFIRMATION  A9 C1-C7 pass -> G2 QUALIFIED -> G1 ok -> G3 request MSG-003
+                          G3 refused: U-DAN is not the owner or a delegate
+ AWAITING_CONFIRMATION -> QUALIFIED_COMPLETE     G3 confirmed by U-MEI -> A10 published DOS-001
+
+FINAL STATE: QUALIFIED_COMPLETE  
+
+[message to U-MEI] Renewal Review brief - clarification round 1
+1. The request asks for negotiate, contact counterparty. The current mandate allows: analyze, consult internal. Should this Review stay within that? If more is needed, the mandate itself must be updated.
+2. Is there an approved budget ceiling for this renewal, and who owns it?
+3. Should this Review also assess replacing the product, or only renewal terms?
+
+[message to U-MEI] Renewal Review brief - clarification round 2
+1. Which of these is a must-have and which is a target we can trade?
+
+[message to U-MEI] Please confirm Review brief v1
+Should Northwind renew Westbrook CRM on changed price and service terms, or replace it, and which terms should it seek within its authority?
+(Will be published as: QUALIFIED)
+
+[message to U-DAN] Your renewal request has been scoped
+Owner: Mei Lin. Question: Should Northwind renew Westbrook CRM on changed price and service terms, or replace it, and which terms should it seek within its authority?
+Exclusions: No supplier contact or negotiation during this Review (owner answer MSG-R1).
+
+BRIEF:
+{
+  "status": "QUALIFIED",
+  "confirmed_by": "U-MEI",
+  "decision_question": "Should Northwind renew Westbrook CRM on changed price and service terms, or replace it, and which terms should it seek within its authority?",
+  "authorized_actions": [
+    "ANALYZE"
+  ],
+  "exclusions": [
+    "No supplier contact or negotiation during this Review (owner answer MSG-R1)."
+  ],
+  "unresolved_authority": [
+    "No budget ceiling is recorded in the mandate."
+  ],
+  "recommended_next_moves": [
+    {
+      "move": "M02",
+      "why": "Build the cited agreement baseline from the listed documents."
+    },
+    {
+      "move": "M03",
+      "why": "Verify term end and notice rules; produce the deadline register."
+    },
+    {
+      "move": "M05",
+      "why": "Cost or quantity goals need observed usage."
+    },
+    {
+      "move": "M04",
+      "why": "Service-level goals need the supplier's delivery history."
+    },
+    {
+      "move": "M13",
+      "why": "Replacement is in scope; define what a replacement must do."
+    },
+    {
+      "move": "M32",
+      "why": "No budget ceiling is recorded in the mandate."
+    }
+  ],
+  "success_criteria": [
+    "MUST: Uptime commitment of at least 99.9% in any renewed or replacement contract [>= 99.9%]",
+    "SHOULD: Uptime of 99.95% if available without breaking cost goals [>= 99.95%]",
+    "SHOULD: Annual cost about 15% below the current contract [-15% vs current baseline]",
+    "SHOULD: Decision ready before the requester's target date [by 2027-03-31 (internal target)]"
+  ],
+  "open_questions": [
+    "MINOR: Requester Daniel Okafor holds no decision right; the brief is owned by Mei Lin. Requester will be informed.",
+    "MATERIAL: No budget ceiling is recorded in the mandate."
+  ],
+  "dates": [
+    "INTERNAL_TARGET: Decision wanted by (VP Sales) = 2027-03-31",
+    "SYSTEM_RECORD: Subscription term end (system record; M02/M03 verify) = 2027-06-30"
+  ]
+}

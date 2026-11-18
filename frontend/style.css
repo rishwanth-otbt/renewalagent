@@ -114,6 +114,16 @@ body {
   cursor: pointer;
 }
 
+.nav-controls input[type="date"] {
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 13px;
+  color-scheme: dark;
+}
+
 .nav-controls select option {
   background: var(--navy-dark);
   color: #ffffff;
@@ -378,6 +388,40 @@ button.btn-primary:hover {
   font-size: 13.5px;
   color: var(--slate-dark);
   line-height: 1.5;
+}
+
+.decision-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+
+.decision-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.decision-tag.warn { background: #fef3c7; color: #92400e; }
+.decision-tag.high { background: #fee2e2; color: #991b1b; }
+
+.decision-drivers {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--slate-dark);
+}
+
+.decision-drivers ul {
+  margin: 4px 0 0 18px;
+  padding: 0;
+}
+
+.decision-drivers li {
+  margin-bottom: 2px;
 }
 
 /* ==========================================================================

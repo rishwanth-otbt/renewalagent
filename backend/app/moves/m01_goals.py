@@ -17,20 +17,20 @@ class MoveM01SetRenewalGoals(BaseMove):
 
     def run(self, dossier: Any) -> MoveTrace:
         raw = dossier.raw_data
-        vendor_info = raw.get("vendor", {})
-        internal = raw.get("internal_assessment", {})
-        proposal = raw.get("vendor_proposal", {})
-        emails = raw.get("emails", [])
+        vendor_info = raw["vendor"]
+        internal = raw["internal_assessment"]
+        proposal = raw["vendor_proposal"]
+        emails = raw["emails"]
 
         # ----------------------------------------------------
         # Action A1: Load Request Context & Identify Owner
         # ----------------------------------------------------
         def action_a1():
-            dossier.case_id = raw.get("case_id", "UNKNOWN")
-            dossier.accountable_owner = internal.get("budget_owner") or internal.get("internal_champion") or "IT Director"
-            dossier.approved_budget_acv = float(internal.get("approved_budget_acv", 0.0))
-            dossier.strategic_importance = internal.get("strategic_importance", "Medium")
-            dossier.known_alternatives = internal.get("known_alternatives", [])
+            dossier.case_id = raw["case_id"]
+            dossier.accountable_owner = internal["budget_owner"]
+            dossier.approved_budget_acv = float(internal["approved_budget_acv"])
+            dossier.strategic_importance = internal["strategic_importance"]
+            dossier.known_alternatives = internal["known_alternatives"]
             return f"Owner: {dossier.accountable_owner}, Budget: ${dossier.approved_budget_acv:,.0f}"
 
         self.execute_action("A1", "LoadRequestContext", action_a1)
@@ -39,7 +39,7 @@ class MoveM01SetRenewalGoals(BaseMove):
         # Gate G0: Authority & Scope Check
         # ----------------------------------------------------
         # Check if email/request asks for unapproved actions (e.g. unauthorized direct vendor negotiation)
-        has_negotiate_intent = any("negotiat" in e.get("summary", "").lower() for e in emails)
+        has_negotiate_intent = any("negotiat" in e["summary"].lower() for e in emails)
         is_mandated_to_negotiate = dossier.approved_budget_acv > 0
         self.record_gate(
             "G0",
@@ -53,8 +53,9 @@ class MoveM01SetRenewalGoals(BaseMove):
         # Action A2: Frame Decision Question
         # ----------------------------------------------------
         def action_a2():
-            vendor_name = vendor_info.get("name", "the incumbent vendor")
-            proposed_term = proposal.get("proposed_term_months", 36) // 12
+            vendor_name = vendor_info["name"]
+            proposed_term = proposal["proposed_term_months"] / 12
+            proposed_term = int(proposed_term) if proposed_term.is_integer() else round(proposed_term, 1)
             dossier.decision_question = (
                 f"Should the organization commit to a {proposed_term}-year renewal with {vendor_name} "
                 f"under proposed commercial terms, seek restructured licensing, or benchmark alternative providers?"
@@ -67,6 +68,7 @@ class MoveM01SetRenewalGoals(BaseMove):
         # Action A3: Establish Success Criteria (MUST & SHOULD)
         # ----------------------------------------------------
         def action_a3():
+            contracted_uptime = raw["sla"]["contracted_uptime_pct"]
             criteria = []
             if dossier.approved_budget_acv > 0:
                 criteria.append({
@@ -76,8 +78,8 @@ class MoveM01SetRenewalGoals(BaseMove):
                 })
             criteria.append({
                 "priority": "MUST",
-                "statement": "Service availability meets or exceeds contractual uptime threshold (>= 99.9%)",
-                "target": ">= 99.9% Uptime"
+                "statement": f"Service availability meets or exceeds contractual uptime threshold (>= {contracted_uptime}%)",
+                "target": f">= {contracted_uptime}% Uptime"
             })
             criteria.append({
                 "priority": "SHOULD",
@@ -85,7 +87,8 @@ class MoveM01SetRenewalGoals(BaseMove):
                 "target": ">= 90% seat utilization"
             })
             dossier.success_criteria = criteria
-            return f"{len(criteria)} success criteria defined (MUST: 2, SHOULD: 1)"
+            must = sum(1 for c in criteria if c["priority"] == "MUST")
+            return f"{len(criteria)} success criteria defined (MUST: {must}, SHOULD: {len(criteria) - must})"
 
         self.execute_action("A3", "EstablishSuccessCriteria", action_a3)
 

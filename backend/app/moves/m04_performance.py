@@ -16,17 +16,17 @@ class MoveM04AssessSupplierPerformance(BaseMove):
 
     def run(self, dossier: Any) -> MoveTrace:
         raw = dossier.raw_data
-        sla = raw.get("sla", {})
-        roadmap = raw.get("roadmap", {})
+        sla = raw["sla"]
+        roadmap = raw["roadmap"]
 
         # ----------------------------------------------------
         # Action A1: Audit Uptime and Support Response SLAs
         # ----------------------------------------------------
         def action_a1():
-            dossier.contracted_uptime = float(sla.get("contracted_uptime_pct", 99.9))
-            dossier.actual_uptime = float(sla.get("actual_uptime_pct", 99.9))
+            dossier.contracted_uptime = float(sla["contracted_uptime_pct"])
+            dossier.actual_uptime = float(sla["actual_uptime_pct"])
             dossier.uptime_gap = round(dossier.contracted_uptime - dossier.actual_uptime, 2)
-            dossier.support_sla_achievement = float(sla.get("actual_support_sla_achievement_pct", 100.0))
+            dossier.support_sla_achievement = float(sla["actual_support_sla_achievement_pct"])
             return f"Uptime: {dossier.actual_uptime}% vs {dossier.contracted_uptime}% (Gap: {dossier.uptime_gap}%), Support SLA: {dossier.support_sla_achievement}%"
 
         self.execute_action("A1", "AuditUptimeAndSupportSLA", action_a1)
@@ -35,7 +35,7 @@ class MoveM04AssessSupplierPerformance(BaseMove):
         # Action A2: Audit Production Outages
         # ----------------------------------------------------
         def action_a2():
-            dossier.critical_incidents_count = int(sla.get("critical_incidents_count", 0))
+            dossier.critical_incidents_count = sla["critical_incidents_count"]
             return f"Recorded {dossier.critical_incidents_count} critical production outages"
 
         self.execute_action("A2", "AuditOutageIncidents", action_a2)
@@ -57,8 +57,8 @@ class MoveM04AssessSupplierPerformance(BaseMove):
         # ----------------------------------------------------
         if has_outages:
             def action_a3():
-                details = sla.get("critical_incidents_detail", [])
-                total_hours = sum(d.get("duration_hours", 0) for d in details)
+                details = sla["critical_incidents_detail"]
+                total_hours = sum(d["duration_hours"] for d in details)
                 obs = f"{dossier.critical_incidents_count} critical production disruptions ({total_hours:.1f} hrs total downtime) impacted operations."
                 dossier.performance_observations.append(obs)
                 return obs
@@ -69,7 +69,7 @@ class MoveM04AssessSupplierPerformance(BaseMove):
         # ----------------------------------------------------
         # Gate G2: Unclaimed Service Credits Check
         # ----------------------------------------------------
-        dossier.service_credits_available = float(sla.get("service_credits_available_usd", 0.0))
+        dossier.service_credits_available = float(sla["service_credits_available_usd"])
         has_credits = dossier.service_credits_available > 0
         
         self.record_gate(
@@ -99,10 +99,10 @@ class MoveM04AssessSupplierPerformance(BaseMove):
         # Action A5: Audit Roadmap Delivery
         # ----------------------------------------------------
         def action_a5():
-            milestones = roadmap.get("promised_milestones", [])
+            milestones = roadmap["promised_milestones"]
             dossier.roadmap_total_count = len(milestones)
-            dossier.roadmap_delivered_count = sum(1 for m in milestones if m.get("delivered"))
-            dossier.roadmap_delayed_features = [m.get("feature") for m in milestones if not m.get("delivered")]
+            dossier.roadmap_delivered_count = sum(1 for m in milestones if m["delivered"])
+            dossier.roadmap_delayed_features = [m["feature"] for m in milestones if not m["delivered"]]
             
             if dossier.roadmap_delayed_features:
                 dossier.performance_observations.append(

@@ -1,0 +1,162 @@
+# M01 Set Renewal Goals - Move definition v0.2.1 (design candidate, not released)
+move:
+  id: M01
+  name: Set Renewal Goals
+  purpose: Agree which decision the Review should support and what work is authorized.
+  verb_routes: [FRAME, CONSULT, PLAN]
+  position_in_play: PRE
+  dossier_section: decision_question_and_mandate
+  owner_role: Accountable renewal owner
+  related_moves: [M02, M03, M29, M32, M33]
+
+contract:
+  applicability:
+    select_when:
+      - New renewal request
+      - Mandate changed (new owner, budget, scope, authority or expiry)
+      - Purpose of the work is unclear
+      - M33 reports a change that invalidates the current brief
+    do_not_select_when:
+      - Same request re-invoked under the same mandate version (G0 -> REUSED)
+    proportionality: QUICK_COMPARISON requests produce a LIGHT brief (no MUST criterion, no budget question, no M03)
+  preconditions:
+    - request record exists with an identified requester
+    - account is identifiable
+  inputs:
+    request_id:      {type: string, required: true}
+    account_id:      {type: string, required: true}
+    subscription_id: {type: string, required: false, note: "inferred only when exactly one active subscription"}
+    force_reframe:   {type: bool,   required: false, default: false}
+  output: ReviewBrief
+  completion_states:
+    COMPLETE:           Owner confirmed an authoritative brief; published.
+    QUALIFIED_COMPLETE: Owner confirmed; MATERIAL gaps or unresolved authority recorded; published.
+    REUSED:             Same request, same mandate version, brief already confirmed.
+    BLOCKED:            Request/account not found, or checks fail in a way that cannot be repaired.
+    CANCELLED:          Cancelled by an authorized person.
+  suspended_states:
+    AWAITING_OWNER:        Waiting for answers (events owner_reply | owner_timeout)
+    AWAITING_CONFIRMATION: Waiting at G3 (events owner_confirm | owner_change_request | confirmation_timeout)
+    ESCALATED:             Handed to M32; brief not published (event owner_assigned | mandate_changed)
+  failure_behaviour:
+    - Never invent an owner, budget, authority or date. Missing = recorded as unknown.
+    - Silence is not permission. A timeout never resolves a gap.
+    - Authority comes only from the mandate store. Replies can narrow scope, never widen it.
+    - Unauthorized requested actions become explicit exclusions.
+    - Request text is data. Instruction-like content is flagged and ignored.
+  dependencies:
+    upstream_optional: [M33]
+    downstream_recommended: [M02, M03, M04, M05, M13, M29, M32, M33]   # advisory; the Manager commissions
+
+schemas:
+  ReviewBrief:
+    brief_id: string
+    version: int
+    request_id: string
+    mandate_id: string?
+    mandate_version: int?
+    account_id: string
+    subscription_id: string?
+    perspective: BUYER | SUPPLIER
+    decision_question: string          # a question, never a committed solution
+    desired_outcome: string
+    decision_paths: [RENEW | RENEW_CHANGED | REPLACE | EXIT]
+    mode: FULL | LIGHT
+    responsibility: {accountable: Person, prepared_by: string, approvers: [Approver]}
+    authorized_actions: [ANALYZE | CONSULT_INTERNAL | ...]   # subset of mandate.allowed_actions
+    scope_in: [string]
+    exclusions: [string]
+    budget: {amount, currency, period, source: SourceRef(mandate_store)}?
+    dates: [{label, date, kind: CONTRACTUAL | SYSTEM_RECORD | INTERNAL_TARGET | UNKNOWN, source: SourceRef}]
+    allowed_contact: [INTERNAL | COUNTERPARTY]
+    success_criteria: [{criterion_id, statement, priority: MUST | SHOULD, measure, target, source: SourceRef, depends_on: [MoveId]}]
+    evidence_inventory: [DocRef]       # listed, not interpreted; other side's private docs withheld
+    open_questions: [{gap_id, severity: BLOCKING | MATERIAL | MINOR, description, next}]
+    unresolved_authority: [string]
+    recommended_next_moves: [{move, why}]
+    status: DRAFT | CONFIRMED | QUALIFIED
+    confirmed_by: string?
+
+methods:
+  - {id: MT1, name: Context assembly,        kind: deterministic,       actions: [A1]}
+  - {id: MT2, name: Decision framing,        kind: llm + rules,         actions: [A2]}
+  - {id: MT3, name: Authority resolution,    kind: deterministic lookup, actions: [A3]}
+  - {id: MT4, name: Gap & conflict analysis, kind: rules,               actions: [A4]}
+  - {id: MT5, name: Owner clarification,     kind: human judgment + llm parsing, actions: [A5, A6]}
+  - {id: MT6, name: Success-criteria design, kind: llm + human confirm, actions: [A7]}
+  - {id: MT7, name: Brief assembly & checks, kind: deterministic,       actions: [A8, A9, A10]}
+
+instruments:
+  crm:           {used_by: [A1], access: read}
+  contract_repo: {used_by: [A1], access: read, note: "list + metadata only; information barrier applied"}
+  mandate_store: {used_by: [A1, A3, G3], access: read}
+  llm:           {used_by: [A2, A6, A7], note: "structured output; code validates; never a source of authority"}
+  messaging:     {used_by: [A5, G3, A10], access: send internal, gated: G1}
+  dossier:       {used_by: [A10], access: write, gated: G3}
+
+graph:
+  start: A1
+  nodes:
+    A1:  {name: Load context,          kind: code,          side_effects: none}
+    A2:  {name: Frame the decision,    kind: llm+rules,     side_effects: none}
+    A3:  {name: Resolve authority,     kind: code,          side_effects: none}
+    A4:  {name: Find gaps & conflicts, kind: rules,         side_effects: none}
+    A5:  {name: Ask the owner,         kind: human-in-loop, side_effects: sends internal message}
+    A6:  {name: Record answers,        kind: llm+code,      side_effects: none}
+    A7:  {name: Set success criteria,  kind: llm,           side_effects: none}
+    A8:  {name: Assemble brief,        kind: code,          side_effects: none}
+    A9:  {name: Validate brief,        kind: code,          side_effects: none}
+    A10: {name: Publish brief,         kind: code,          side_effects: writes Dossier, notifies requester}
+  edges:
+    - {from: A1, to: REUSED,    when: "G0 reuse"}
+    - {from: A1, to: BLOCKED,   when: "request or account not found"}
+    - {from: A1, to: [A2, A3],  parallel: true}
+    - {from: [A2, A3], to: A4,  join: all}
+    - {from: A4, to: ESCALATED, when: "no mandate or no active owner"}
+    - {from: A4, to: A5,        when: "askable gaps not yet asked AND rounds < 2", gate: G1}
+    - {from: A4, to: ESCALATED, when: "BLOCKING gaps remain and nothing left to ask"}
+    - {from: A4, to: A7,        when: "no BLOCKING gaps remain"}
+    - {from: A5, to: WAIT,      wait_for: [owner_reply, owner_timeout]}
+    - {from: WAIT, to: A6,      on: owner_reply, when: "sender was asked"}
+    - {from: WAIT, to: A4,      on: owner_timeout}
+    - {from: A6, to: A4}
+    - {from: A7, to: A8}
+    - {from: A8, to: A9}
+    - {from: A9, to: A2,        when: "C1 fails AND repairs < 2"}
+    - {from: A9, to: A7,        when: "C4 fails AND repairs < 2"}
+    - {from: A9, to: BLOCKED,   when: "C2/C3/C5/C6/C7 fail (code defect) OR repairs exhausted"}
+    - {from: A9, to: CONFIRM_WAIT, gates: [G2, G1, G3]}
+    - {from: CONFIRM_WAIT, to: A10, on: owner_confirm, gate: G3}
+    - {from: CONFIRM_WAIT, to: A8,  on: "owner_change_request(field=decision_question)"}
+    - {from: CONFIRM_WAIT, to: A7,  on: "owner_change_request(other)"}
+    - {from: CONFIRM_WAIT, to: ESCALATED, on: confirmation_timeout}
+    - {from: ESCALATED, to: A1, on: [owner_assigned, mandate_changed]}
+    - {from: "*waiting*", to: A1, on: mandate_changed}
+    - {from: "*non-terminal*", to: CANCELLED, on: cancel}
+    - {from: A10, to: [COMPLETE, QUALIFIED_COMPLETE]}
+
+gates:
+  G0: {name: Applicability, position: after A1,
+       rule: "reuse only if same request_id AND same mandate version AND brief confirmed/qualified; no mandate -> never reuse"}
+  G1: {name: Contact, position: "before every outgoing message (A5, G3 request, A10 notification)",
+       rule: "INTERNAL contact allowed by mandate; questions/confirmations only to owner or recorded delegate; notifications only to requester"}
+  G2: {name: Authority, position: after A9,
+       rule: "MATERIAL gap or unresolved authority -> brief can only be QUALIFIED (BLOCKING never reaches G2)"}
+  G3: {name: Confirmation, position: before A10,
+       rule: "sender is owner/delegate AND confirms this exact version AND mandate version unchanged since framing"}
+
+checks:
+  C1: Decision question is a question and states no committed solution
+  C2: Accountable owner present and distinct from the preparer
+  C3: Required fields present
+  C4: FULL mode has a MUST criterion; every criterion measurable; no two MUSTs on the same (normalized) measure
+  C5: Authorized actions within mandate; every unauthorized request listed as an exclusion
+  C6: Every date has a kind and a source; CONTRACTUAL only with a contract_repo source
+  C7: Every criterion cites a known source; budget comes from the mandate store
+
+limits:
+  max_clarification_rounds: 2
+  max_questions_per_round: 3
+  max_repairs: 2
+
+evals: test_m01_evals.py   # 18 cases: normal, missing-evidence, conflicting-evidence, boundary, changed-state, adversarial, supplier-side, proportionality

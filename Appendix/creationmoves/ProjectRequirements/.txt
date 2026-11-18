@@ -1,0 +1,74 @@
+None selected
+
+Skip to content
+Using Optimus BT Mail with screen readers
+
+1 of 357
+Moves Assigned to Rishwant and me
+Inbox
+Summarize this email
+
+Samee Ahmad
+Attachments
+5:13 PM (36 minutes ago)
+to Ajith, me
+
+Hi Sir,
+Moves assigned to
+
+1 - Rishwant 
+M01 Set Renewal Goals 
+M02 Check Agreement Terms 
+M03 Check Renewal Deadlines 
+M04 Assess Supplier Performance 
+M05 Analyze Product Usage 
+
+2 - Samee 
+M09 Compare Quotes 
+M10 Compare Renewal Costs 
+M11 Find Savings Opportunities 
+M12 Check Pricing Limits Evaluate 
+M13 Define Replacement Needs 
+M14 Research Alternatives 
+M15 Compare Alternative Offers 
+
+The seven steps before implementing a Move
+1. Understand the business problem- 
+Research what an experienced practitioner is actually trying to accomplish, when the Move is useful, what makes its result valuable, and what would make it fail.
+Output: Business Problem & Competency Definition
+
+2. Research and compare candidate Methods
+Investigate different ways of performing the Move. Evaluate where deterministic algorithms, expert rules, LLM reasoning, probabilistic methods or human judgment are appropriate.
+Output: Method Research & Selection Report
+
+3. Design the complete Move contract
+Specify applicability, preconditions, input data, expected outcomes, output schemas, completion states, failure behavior and dependencies on other Moves.
+Output: Move Definition v0.2
+
+4. Decompose into Methods, Instruments and Actions
+Define how the Move performs each meaningful step, which instruments it uses, what each Action does, and where tools and LLM calls are required.
+Output: Executable Design & Action Contracts
+
+5. Define Checks and Gates
+Specify how outputs will be validated and which conditions restrict research, publication, approval, external communication or execution.
+Output: Check Rules & Gate Contracts
+
+6. Design challenging Evals
+Create realistic normal, missing-evidence, conflicting-evidence, boundary, changed-state and adversarial cases. Specify expected behavior and objective test oracles.
+Output: Move Evaluation Suite
+
+7. Qualify implementation readiness
+Review the design for missing evidence, unresolved business policies, incomplete handlers, unclear permissions and untestable requirements.
+Output: Implementation Readiness Decision
+
+
+
+ One attachment
+  •  Scanned by Gmail
+Hi Samee,
+
+Got it, thanks for the update. I'll get started on these.
+
+Best regards,
+Gourishetty Rishwanth
+and attached doceument C:\Users\Gourishetty.R\Desktop\creationmoves\ProjectRequirements\Kozmo_Renewal_Desk_Verbs_and_Move_Cards_v0_2.pdf whihch is ther eint his location
