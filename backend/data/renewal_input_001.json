@@ -1,0 +1,160 @@
+{
+  "case_id": "RENEWAL-2026-001",
+
+  "vendor": {
+    "name": "CloudSuite Enterprise",
+    "service_type": "Enterprise SaaS Platform",
+    "account_manager": "Jane Smith",
+    "account_manager_email": "jane.smith@cloudsuite.com",
+    "vendor_tier": "Tier 1 Strategic"
+  },
+
+  "msa": {
+    "contract_id": "MSA-CS-2024-00441",
+    "signed_date": "2024-02-01",
+    "current_term_start": "2024-02-01",
+    "current_term_end": "2027-01-31",
+    "notice_period_days": 60,
+    "auto_renewal": true,
+    "governing_law": "Delaware, USA",
+    "payment_terms_days": 30,
+    "termination_for_convenience": false,
+    "price_increase_cap_pct": null
+  },
+
+  "current_pricing": {
+    "annual_contract_value": 1200000,
+    "total_seats": 1000,
+    "unit_price_per_seat": 1200,
+    "billing_frequency": "annual",
+    "modules_included": ["Core", "Analytics", "API Access"],
+    "currency": "USD"
+  },
+
+  "vendor_proposal": {
+    "received_date": "2026-11-01",
+    "proposed_annual_value": 1440000,
+    "proposed_seats": 1000,
+    "proposed_unit_price": 1440,
+    "proposed_term_months": 36,
+    "proposed_modules": ["Core", "Analytics", "API Access", "AI Module"],
+    "price_increase_justification": "Infrastructure cost increases and new AI module inclusion",
+    "proposal_expiry_date": "2026-12-15"
+  },
+
+  "sla": {
+    "contracted_uptime_pct": 99.9,
+    "contracted_support_response_hours": 4,
+    "contracted_resolution_hours": 24,
+    "actual_uptime_pct": 99.7,
+    "actual_support_sla_achievement_pct": 68,
+    "critical_incidents_count": 4,
+    "critical_incidents_detail": [
+      { "date": "2024-05-10", "duration_hours": 3.5, "impacted_users": 800 },
+      { "date": "2024-09-22", "duration_hours": 1.2, "impacted_users": 400 },
+      { "date": "2025-03-14", "duration_hours": 5.0, "impacted_users": 1000 },
+      { "date": "2026-07-08", "duration_hours": 2.0, "impacted_users": 600 }
+    ],
+    "service_credits_claimed_usd": 0,
+    "service_credits_available_usd": 48000
+  },
+
+  "addendum": [
+    {
+      "addendum_id": "ADD-001",
+      "signed_date": "2024-08-15",
+      "description": "Added Analytics module at no additional cost for 12 months",
+      "expiry": "2025-08-15",
+      "status": "expired"
+    },
+    {
+      "addendum_id": "ADD-002",
+      "signed_date": "2025-01-10",
+      "description": "Data residency clause — EU data stored in EU region",
+      "expiry": null,
+      "status": "active"
+    }
+  ],
+
+  "usage": {
+    "total_provisioned_seats": 1000,
+    "active_seats_last_90_days": 780,
+    "inactive_seats": 220,
+    "departments": [
+      { "name": "Sales",      "provisioned": 300, "active": 280 },
+      { "name": "Marketing",  "provisioned": 200, "active": 170 },
+      { "name": "Operations", "provisioned": 300, "active": 230 },
+      { "name": "IT",         "provisioned": 100, "active": 80  },
+      { "name": "Finance",    "provisioned": 100, "active": 20  }
+    ],
+    "feature_adoption": {
+      "core_module_pct": 90,
+      "analytics_module_pct": 55,
+      "api_access_pct": 30
+    }
+  },
+
+  "roadmap": {
+    "promised_milestones": [
+      { "feature": "SSO Integration",         "promised_date": "2025-06-01", "delivered": true,  "actual_date": "2025-05-28" },
+      { "feature": "Mobile App",              "promised_date": "2025-09-01", "delivered": true,  "actual_date": "2025-10-15" },
+      { "feature": "Advanced Reporting",      "promised_date": "2026-03-01", "delivered": false, "actual_date": null },
+      { "feature": "Workflow Automation",     "promised_date": "2026-06-01", "delivered": false, "actual_date": null },
+      { "feature": "Data Export API v2",      "promised_date": "2026-09-01", "delivered": false, "actual_date": null }
+    ]
+  },
+
+  "emails": [
+    {
+      "date": "2026-10-01",
+      "from": "jane.smith@cloudsuite.com",
+      "subject": "Upcoming renewal — CloudSuite Enterprise",
+      "summary": "Vendor initiated renewal conversation, flagged price increase due to infrastructure costs."
+    },
+    {
+      "date": "2026-11-01",
+      "from": "jane.smith@cloudsuite.com",
+      "subject": "Renewal proposal attached",
+      "summary": "Formal proposal received. 20% increase. 36-month term proposed."
+    },
+    {
+      "date": "2026-11-10",
+      "from": "procurement@acme.com",
+      "subject": "Re: Renewal proposal — internal review in progress",
+      "summary": "Internal team acknowledged receipt. Requested 2-week review period."
+    }
+  ],
+
+  "renewal_history": [
+    {
+      "renewal_cycle": "2022-2024",
+      "original_acv": 950000,
+      "renewed_acv": 1100000,
+      "increase_pct": 15.8,
+      "seats": 900,
+      "term_months": 24,
+      "outcome": "Renewed with minor negotiation",
+      "negotiated_savings_usd": 50000
+    },
+    {
+      "renewal_cycle": "2024-2027",
+      "original_acv": 1100000,
+      "renewed_acv": 1200000,
+      "increase_pct": 9.1,
+      "seats": 1000,
+      "term_months": 36,
+      "outcome": "Renewed as-is",
+      "negotiated_savings_usd": 0
+    }
+  ],
+
+  "internal_assessment": {
+    "strategic_importance": "High",
+    "replacement_difficulty": "Medium",
+    "known_alternatives": ["SalesForce Enterprise", "HubSpot Enterprise", "Microsoft Dynamics"],
+    "migration_estimate_months": 6,
+    "internal_champion": "CTO",
+    "budget_owner": "IT Director",
+    "approved_budget_acv": 1250000
+  }
+}

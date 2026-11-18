@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Vendor Renewal — Executive Decision Brief</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Action & Case Switcher Bar (Hidden when printing) -->
+  <header class="top-nav no-print">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <span class="agent-icon">⚡</span>
+        <strong>Renewal Intelligence Agent</strong>
+        <span class="poc-badge">POC 1</span>
+      </div>
+      <div class="nav-controls">
+        <label for="caseSelect">Select Input Case:</label>
+        <select id="caseSelect">
+          <option value="">Loading cases...</option>
+        </select>
+        <button id="reloadBtn" title="Run State Machine Again">🔄 Re-evaluate</button>
+        <button id="printBtn" class="btn-primary" title="Export as PDF / Print">🖨️ Export PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- State Machine Pipeline Bar (Hidden when printing) -->
+  <div class="pipeline-container no-print">
+    <div class="pipeline-title">State Machine Execution Audit:</div>
+    <div id="statePipeline" class="pipeline-steps">
+      <!-- Injected by app.js -->
+    </div>
+  </div>
+
+  <!-- Main Executive Brief Container (Printable One-Page / Formatted Layout) -->
+  <main class="brief-container" id="briefContainer">
+    
+    <!-- Document Header / Meta -->
+    <section class="doc-header">
+      <div class="doc-meta-left">
+        <div class="meta-tag" id="confidentialBadge">CONFIDENTIAL · EXECUTIVE BRIEF</div>
+        <h1 id="briefDocTitle">IT Vendor Renewal — Executive Decision Brief</h1>
+        <p class="subtitle" id="serviceSubtitle">Enterprise SaaS Platform Renewal Assessment</p>
+      </div>
+      <div class="doc-meta-right">
+        <div class="decision-box" id="decisionPillBox">
+          <span class="decision-label">RECOMMENDED ACTION</span>
+          <span class="decision-value" id="mainDecisionValue">Evaluating...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Case Quick Stats Bar -->
+    <section class="quick-stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Current Annual ACV</span>
+        <span class="stat-number" id="kpiCurrentAcv">—</span>
+        <span class="stat-sub" id="kpiCurrentSeats">—</span>
+      </div>
+      <div class="stat-card highlight">
+        <span class="stat-label">Proposed Renewal ACV</span>
+        <span class="stat-number" id="kpiProposedAcv">—</span>
+        <span class="stat-sub alert-text" id="kpiIncreasePct">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Negotiation Target ACV</span>
+        <span class="stat-number" id="kpiTargetAcv">—</span>
+        <span class="stat-sub positive-text" id="kpiSavingsTarget">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Notice Deadline</span>
+        <span class="stat-number" id="kpiNoticeDeadline">—</span>
+        <span class="stat-sub" id="kpiNoticeDaysRemaining">—</span>
+      </div>
+    </section>
+
+    <!-- Context & Case Details Metadata Strip -->
+    <section class="meta-strip">
+      <div class="meta-item">
+        <span class="meta-label">Vendor:</span>
+        <strong id="metaVendorName">—</strong>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Service:</span>
+        <span id="metaServiceName">—</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Contract Term:</span>
+        <span id="metaTerm">—</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Renewal Deadline:</span>
+        <span id="metaRenewalDeadline">—</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Assessment Date:</span>
+        <span id="metaAssessmentDate">—</span>
+      </div>
+    </section>
+
+    <!-- Executive Decision Rationale Alert Banner -->
+    <section class="executive-summary-banner" id="executiveSummaryBanner">
+      <div class="banner-icon">📋</div>
+      <div class="banner-body">
+        <h3 id="execDecisionHeading">Executive Summary & Position</h3>
+        <p id="execDecisionRationale">Running state machine analysis...</p>
+      </div>
+    </section>
+
+    <!-- SECTION 1: Financial Impact & Commercial Assessment -->
+    <section class="brief-section">
+      <div class="section-header">
+        <span class="section-num">1</span>
+        <h2>Financial Impact & Commercial Assessment</h2>
+      </div>
+
+      <div class="two-column-layout">
+        <!-- Comparison Table -->
+        <div class="column">
+          <h4 class="subheading">Current vs Proposed Commercial Position</h4>
+          <table class="data-table" id="financialTable">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Current</th>
+                <th>Proposed</th>
+                <th>Delta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rendered by app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3-Year Exposure & Optimization Summary -->
+        <div class="column">
+          <h4 class="subheading">Three-Year Contract Value Exposure</h4>
+          <div class="exposure-cards">
+            <div class="exposure-row">
+              <span class="exp-title">Baseline (Hold Current Rate):</span>
+              <strong class="exp-val" id="expBaseline">$0.00M</strong>
+            </div>
+            <div class="exposure-row warn">
+              <span class="exp-title">Vendor Proposal (36 Months):</span>
+              <strong class="exp-val" id="expProposal">$0.00M</strong>
+            </div>
+            <div class="exposure-row target">
+              <span class="exp-title">Negotiation Target (Cap / Restructured):</span>
+              <strong class="exp-val" id="expTarget">$0.00M</strong>
+            </div>
+          </div>
+
+          <div class="callout-box">
+            <strong>License Optimization Findings:</strong>
+            <ul id="licenseFindingsList">
+              <!-- Rendered by app.js -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: Historical Renewal Trend Comparison -->
+    <section class="brief-section">
+      <div class="section-header">
+        <span class="section-num">2</span>
+        <h2>Historical Renewal Trend & Escalation Comparison</h2>
+      </div>
+      <div class="history-container">
+        <div class="history-metrics-bar">
+          <div class="history-badge">
+            <span class="lbl">Past Avg Increase:</span>
+            <strong id="histAvgIncrease">0%</strong>
+          </div>
+          <div class="history-badge">
+            <span class="lbl">Current Increase Ask:</span>
+            <strong id="histCurrentAsk" class="alert-text">0%</strong>
+          </div>
+          <div class="history-badge">
+            <span class="lbl">Escalation Above History:</span>
+            <strong id="histVsAvg" class="alert-text">+0%</strong>
+          </div>
+          <div class="history-badge">
+            <span class="lbl">Cumulative Spend to Date:</span>
+            <strong id="histTotalSpend">$0.00M</strong>
+          </div>
+        </div>
+
+        <table class="data-table" id="historyTable">
+          <thead>
+            <tr>
+              <th>Renewal Cycle</th>
+              <th>Seats</th>
+              <th>Renewed ACV</th>
+              <th>Price Escalation</th>
+              <th>Outcome & Concessions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rendered by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 3: Vendor Performance & SLA Assessment -->
+    <section class="brief-section">
+      <div class="section-header">
+        <span class="section-num">3</span>
+        <h2>Vendor Performance & SLA Assessment</h2>
+        <span class="status-chip" id="perfOverallRating">Evaluating</span>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="column">
+          <table class="data-table" id="perfTable">
+            <thead>
+              <tr>
+                <th>Performance Indicator</th>
+                <th>Contracted Target</th>
+                <th>Observed Result</th>
+                <th>Assessment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rendered by app.js -->
+            </tbody>
+          </table>
+        </div>
+        <div class="column">
+          <div class="notes-panel">
+            <h4>Key Performance Observations</h4>
+            <ul id="perfObservationsList">
+              <!-- Rendered by app.js -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: Risk Assessment & Governance Flags -->
+    <section class="brief-section">
+      <div class="section-header">
+        <span class="section-num">4</span>
+        <h2>Risk Assessment & Contract Governance</h2>
+        <span class="status-chip" id="riskOverallLevel">Medium</span>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="column">
+          <table class="data-table" id="riskTable">
+            <thead>
+              <tr>
+                <th>Identified Risk</th>
+                <th>Severity</th>
+                <th>Potential Business Impact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rendered by app.js -->
+            </tbody>
+          </table>
+        </div>
+        <div class="column">
+          <div class="alert-box-critical">
+            <strong>Critical Renewal Concern:</strong>
+            <p id="criticalConcernText">—</p>
+          </div>
+          <div class="flags-box">
+            <h4>SLA, Addendum & Governance Flags</h4>
+            <div id="slaFlagsList">
+              <!-- Rendered by app.js -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: Renewal Recommendation & Strategic Options -->
+    <section class="brief-section">
+      <div class="section-header">
+        <span class="section-num">5</span>
+        <h2>Strategic Renewal Options & Negotiation Objectives</h2>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="column">
+          <h4 class="subheading">Strategic Options Evaluation</h4>
+          <table class="data-table" id="optionsTable">
+            <thead>
+              <tr>
+                <th>Strategic Option</th>
+                <th>Recommendation & Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rendered by app.js -->
+            </tbody>
+          </table>
+          <div class="fallback-box">
+            <strong>Fallback Strategy:</strong>
+            <p id="fallbackStrategyText">—</p>
+          </div>
+        </div>
+
+        <div class="column">
+          <h4 class="subheading">Recommended Negotiation Objectives</h4>
+          <ol class="objectives-list" id="negotiationObjectivesList">
+            <!-- Rendered by app.js -->
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: Operational Execution Timeline & Milestones -->
+    <section class="brief-section">
+      <div class="section-header">
+        <span class="section-num">6</span>
+        <h2>Operational Renewal Plan & Critical Milestones</h2>
+        <span class="status-chip neutral" id="planDurationBadge">4–6 Weeks</span>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="column">
+          <h4 class="subheading">Execution Phases</h4>
+          <div class="timeline-phases" id="timelinePhases">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+
+        <div class="column">
+          <h4 class="subheading">Critical Milestones & Cutoff Dates</h4>
+          <table class="data-table" id="milestonesTable">
+            <thead>
+              <tr>
+                <th>Milestone</th>
+                <th>Target Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rendered by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: Further Analysis Recommended by the Agent -->
+    <section class="brief-section">
+      <div class="section-header">
+        <span class="section-num">7</span>
+        <h2>Recommended Further Investigations</h2>
+      </div>
+      <table class="data-table" id="furtherAnalysisTable">
+        <thead>
+          <tr>
+            <th>Investigation Domain</th>
+            <th>Expected Deliverable</th>
+            <th>Estimated Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rendered by app.js -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Document Footer -->
+    <footer class="doc-footer">
+      <div class="footer-left">
+        Generated by <strong>AI Renewal Intelligence Agent</strong> (POC 1) · Automated Decision Engine
+      </div>
+      <div class="footer-right">
+        Confidential · For Internal Procurement & IT Leadership Use Only
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
