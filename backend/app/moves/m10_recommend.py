@@ -23,6 +23,45 @@ def _rating_meets(rating: str, minimum: str) -> bool:
     return RATING_ORDER.get(rating, -1) >= RATING_ORDER[minimum]
 
 
+def _check(rule_id: str, group: str, rule: str, limit: str, actual: str, passed: bool) -> Dict[str, Any]:
+    """One policy rule evaluated for this case. passed=True means the rule does not stand in the way of renewing."""
+    return {"id": rule_id, "group": group, "rule": rule, "limit": limit, "actual": actual, "passed": bool(passed)}
+
+
+def build_rule_checks(d: Any) -> List[Dict[str, Any]]:
+    """The policy rules that decide the label (M10 G1/G2), with the case's actual values."""
+    rn, sw = d.policy.renew, d.policy.switch
+    budget_ok = d.budget_gap_usd <= 0
+    if d.approved_budget_acv <= 0:
+        budget_actual = "no approved budget"
+    elif budget_ok:
+        budget_actual = f"{_fmt_usd(-d.budget_gap_usd)} under budget"
+    else:
+        budget_actual = f"{_fmt_usd(d.budget_gap_usd)} over budget"
+    cap_actual = ("no cap in MSA" if d.price_cap_pct is None
+                  else f"+{d.increase_pct}% vs {d.price_cap_pct:g}% cap")
+    poor_perf_switch = (d.uptime_gap > sw.poor_performance_uptime_gap and d.performance_rating == "Needs Improvement"
+                        and d.increase_pct >= sw.poor_performance_min_increase_pct)
+    return [
+        _check("renew.max_increase_pct", "Renew", "Price increase within renew limit",
+               f"≤ {rn.max_increase_pct:g}%", f"+{d.increase_pct}%", d.increase_pct <= rn.max_increase_pct),
+        _check("renew.min_performance_rating", "Renew", "Supplier performance rating",
+               f"{rn.min_performance_rating} or better", d.performance_rating,
+               _rating_meets(d.performance_rating, rn.min_performance_rating)),
+        _check("renew.require_within_budget", "Renew", "Within approved budget",
+               "≤ approved budget" if rn.require_within_budget else "not required", budget_actual,
+               budget_ok or not rn.require_within_budget),
+        _check("renew.require_within_price_cap", "Renew", "Within contractual price cap",
+               "≤ contract cap" if rn.require_within_price_cap else "not required", cap_actual,
+               not d.cap_breach or not rn.require_within_price_cap),
+        _check("switch.price_shock_pct", "Switch", "Price increase below switch trigger",
+               f"< {sw.price_shock_pct:g}%", f"+{d.increase_pct}%", d.increase_pct < sw.price_shock_pct),
+        _check("switch.poor_performance", "Switch", "No poor-performance switch trigger",
+               f"not (uptime gap > {sw.poor_performance_uptime_gap:g} pts, Needs Improvement, increase ≥ {sw.poor_performance_min_increase_pct:g}%)",
+               f"gap {d.uptime_gap} pts, {d.performance_rating}, +{d.increase_pct}%", not poor_perf_switch),
+    ]
+
+
 class MoveM10ModelCostsAndRecommend(BaseMove):
     move_id = "M10"
     name = "Model Costs & Recommend"
@@ -56,6 +95,23 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         if d.notice_passed:
             return f"{stay_action} If no agreement is reached before {d.renewal_deadline}, sign a short bridge extension at the current rate."
         return f"{stay_action} If the vendor will not move, issue notice of non-renewal before {d.notice_deadline} and {exit_action}."
+
+    @staticmethod
+    def _decided_by(d: Any) -> str:
+        """One sentence naming the policy rules that produced the label."""
+        def fmt(checks):
+            return "; ".join(f"{c['rule']} ({c['actual']}, needs {c['limit']})" for c in checks)
+        failed = [c for c in d.rule_checks if not c["passed"]]
+        if d.primary_decision == "Renew":
+            return "Renew: every Renew rule in the policy is met."
+        if d.primary_decision == "Switch / Benchmark":
+            return "Switch / Benchmark: switch rule not met — " + fmt([c for c in failed if c["group"] == "Switch"]) + "."
+        renew_failed = [c for c in failed if c["group"] == "Renew"]
+        text = "Renegotiate: Renew rules not met — " + fmt(renew_failed) + "." if renew_failed else "Renegotiate."
+        if d.switch_downgraded:
+            text += (" A switch rule was also not met, but the vendor is hard to replace and performance is not "
+                     "Needs Improvement, so Switch was downgraded to Renegotiate.")
+        return text
 
     def run(self, dossier: Any) -> MoveTrace:
         raw = dossier.raw_data
@@ -239,6 +295,8 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                               and (dossier.budget_gap_usd <= 0 or not rn.require_within_budget)
                               and (not dossier.cap_breach or not rn.require_within_price_cap))
 
+        dossier.rule_checks = build_rule_checks(dossier)
+
         if is_switch_candidate:
             routing_decision = "ROUTE_SWITCH_BENCHMARK"
         elif is_renew_candidate:
@@ -267,6 +325,10 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         dossier.switch_downgraded = (routing_decision == "ROUTE_SWITCH_BENCHMARK"
                                      and dossier.hard_to_replace
                                      and dossier.performance_rating != "Needs Improvement")
+        dossier.rule_checks.append(_check(
+            "switch.hard_to_replace", "Switching cost", "Vendor can be replaced",
+            f"difficulty not in ({', '.join(sw.hard_to_replace_levels)}) and migration < {sw.long_migration_months} months",
+            f"{replacement_difficulty}, {migration_months} months", not dossier.hard_to_replace))
         if dossier.switch_downgraded:
             routing_decision = "ROUTE_RENEGOTIATE"
             g2_decision = "DOWNGRADE_TO_RENEGOTIATE"
@@ -500,6 +562,9 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                     "case_id": dossier.case_id,
                     "assessment_date": dossier.as_of.isoformat(),
                     "policy_version": dossier.policy_version,
+                    "policy": dossier.policy.model_dump(),
+                    "rule_checks": dossier.rule_checks,
+                    "decided_by": self._decided_by(dossier),
                     "renewal_deadline": dossier.renewal_deadline,
                     "notice_deadline": dossier.notice_deadline,
                     "notice_days": dossier.notice_period_days,
