@@ -3,20 +3,27 @@ import re
 from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import SQLAlchemyError
 
 try:
     from backend.app.core.orchestrator import RenewalDeskOrchestrator, CaseValidationError, validate_case
     from backend.app.core.policy_store import default_store
-    from backend.app.models.input_models import ProcessRequest, UploadCaseRequest
+    from backend.app.db import repository as repo
+    from backend.app.db.database import session_scope
+    from backend.app.models.input_models import PdfExportRequest, ProcessRequest, UploadCaseRequest
     # from backend.app.models.policy_models import RenewalPolicy, policy_field_catalog  # POLICY DISABLED
 except ImportError:
     from app.core.orchestrator import RenewalDeskOrchestrator, CaseValidationError, validate_case
     from app.core.policy_store import default_store
-    from app.models.input_models import ProcessRequest, UploadCaseRequest
+    from app.db import repository as repo
+    from app.db.database import session_scope
+    from app.models.input_models import PdfExportRequest, ProcessRequest, UploadCaseRequest
     # from app.models.policy_models import RenewalPolicy, policy_field_catalog  # POLICY DISABLED
 
 app = FastAPI(
@@ -42,7 +49,6 @@ async def no_stale_frontend(request, call_next):
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
 
 # Versioned client policy (backend/policies/). Module-level so tests can swap in a temporary store.
@@ -53,32 +59,19 @@ def _orchestrator() -> RenewalDeskOrchestrator:
     return RenewalDeskOrchestrator(POLICY_STORE)
 
 
-def _case_path(case_id: str) -> Path:
-    """Resolve a case id to a JSON file inside DATA_DIR; reject anything that escapes it."""
-    stem = Path(case_id).stem if case_id.endswith(".json") else case_id
-    path = (DATA_DIR / f"{stem}.json").resolve()
-    if path.parent != DATA_DIR.resolve():
-        raise HTTPException(status_code=400, detail="Invalid case id.")
-    return path
-
-
-CASE_PREFIX = "renewal_input_"
-_CASE_NUM_RE = re.compile(rf"^{CASE_PREFIX}(\d+)$")
-
-
-def _next_case_number() -> int:
-    """Highest existing renewal_input_NNN number in DATA_DIR + 1 (001 if none)."""
-    nums = [int(m.group(1)) for f in DATA_DIR.glob("*.json") if (m := _CASE_NUM_RE.match(f.stem))]
-    return max(nums, default=0) + 1
+@app.exception_handler(SQLAlchemyError)
+async def database_error(request: Request, exc: SQLAlchemyError):
+    """Database down or misconfigured: say so plainly instead of a bare 500."""
+    return JSONResponse(
+        status_code=503,
+        content={"detail": f"Database error ({type(exc).__name__}). Check that SQL Server is running and "
+                           f"DATABASE_URL in backend/.env is correct."},
+    )
 
 
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "Renewal Intelligence Agent POC 1"}
-
-
-# Uploaded files keep a safe internal id (renewal_input_NNN) but are shown under the name the user uploaded.
-DISPLAY_NAME_KEY = "_display_name"
 
 
 def _clean_filename(filename: str) -> str:
@@ -87,54 +80,14 @@ def _clean_filename(filename: str) -> str:
     return name[:120]
 
 
-def _display_name(path: Path) -> str:
-    """Original upload name if recorded, else a readable form of the id (renewal_input_001 -> Renewal Input 001)."""
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            name = json.load(f).get(DISPLAY_NAME_KEY)
-        if isinstance(name, str) and name.strip():
-            return name.strip()
-    except (OSError, ValueError, AttributeError):
-        pass
-    return path.stem.replace("_", " ").title()
+def _load_contract_json(session, case_id: int):
+    contract = repo.get_contract(session, case_id)
+    if contract is None:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found.")
+    return contract, json.loads(contract.contract_json)
 
 
-@app.get("/api/cases")
-def list_cases():
-    """Lists available case files in data folder.
-
-    `cases` is the list of ids (unchanged). `items` pairs each id with the name to show the user;
-    if two uploads share a name, later ones get " (2)", " (3)" so the list stays unambiguous.
-    """
-    if not DATA_DIR.exists():
-        return {"cases": [], "items": []}
-    paths = sorted(DATA_DIR.glob("*.json"), key=lambda p: p.stem)
-    items, seen = [], {}
-    for p in paths:
-        name = _display_name(p)
-        seen[name] = seen.get(name, 0) + 1
-        if seen[name] > 1:
-            name = f"{name} ({seen[name]})"
-        items.append({"id": p.stem, "name": name})
-    return {"cases": [p.stem for p in paths], "items": items}
-
-
-@app.get("/api/case/{case_id}")
-def get_case_brief(case_id: str, as_of: Optional[date] = None):
-    """Loads raw contract JSON for case_id, executes the move pipeline, and returns the executive brief JSON.
-
-    as_of (YYYY-MM-DD, optional) fixes the assessment date so results are repeatable; defaults to today.
-    """
-    json_path = _case_path(case_id)
-    if not json_path.exists():
-        raise HTTPException(status_code=404, detail=f"Case file '{case_id}' not found in data directory.")
-
-    try:
-        with open(json_path, "r", encoding="utf-8") as f:
-            raw_data = json.load(f)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error reading JSON file: {str(e)}")
-
+def _run(case_id: int, raw_data: Dict[str, Any], as_of: date) -> Dict[str, Any]:
     try:
         result = _orchestrator().run_play(raw_data, as_of=as_of)
     except CaseValidationError as e:
@@ -142,18 +95,58 @@ def get_case_brief(case_id: str, as_of: Optional[date] = None):
             status_code=422,
             detail=f"Case '{case_id}' is missing required data or has invalid values: " + "; ".join(e.errors),
         )
-    return result["brief"]
+    return jsonable_encoder(result["brief"])
+
+
+@app.get("/api/cases")
+def list_cases():
+    """Lists the contracts stored in the database.
+
+    `cases` is the list of ids. `items` pairs each id with the name to show the user;
+    if two uploads share a name, later ones get " (2)", " (3)" so the list stays unambiguous.
+    """
+    with session_scope() as s:
+        contracts = repo.list_contracts(s)
+    items, seen = [], {}
+    for c in contracts:
+        name = c.display_name
+        seen[name] = seen.get(name, 0) + 1
+        if seen[name] > 1:
+            name = f"{name} ({seen[name]})"
+        items.append({"id": c.id, "name": name})
+    return {"cases": [c.id for c in contracts], "items": items}
+
+
+@app.get("/api/case/{case_id}")
+def get_case_brief(case_id: int, as_of: Optional[date] = None):
+    """Runs the move pipeline on a stored contract and returns the brief. Read-only: nothing is saved.
+
+    as_of (YYYY-MM-DD, optional) fixes the assessment date so results are repeatable; defaults to today.
+    """
+    with session_scope() as s:
+        _, raw_data = _load_contract_json(s, case_id)
+    return _run(case_id, raw_data, as_of or date.today())
 
 
 @app.post("/api/process")
 def process_case(request: ProcessRequest):
-    """Processes a case by ID via POST and returns the generated executive brief"""
-    return get_case_brief(request.case_id)
+    """'Generate brief': runs the pipeline, saves the result in EvaluationResults and returns the brief.
+
+    The brief's meta gains result_id (needed to record a PDF export) and evaluated_at.
+    """
+    as_of = request.as_of or date.today()
+    with session_scope() as s:
+        contract, raw_data = _load_contract_json(s, request.case_id)
+        brief = _run(request.case_id, raw_data, as_of)
+        result = repo.add_result(s, contract, brief, as_of)
+        brief["meta"]["result_id"] = result.id
+        brief["meta"]["evaluated_at"] = result.evaluated_at.isoformat(sep=" ")
+    return brief
 
 
 @app.post("/api/upload")
 def upload_case(req: UploadCaseRequest):
-    """Validates custom contract JSON, saves it to the data directory, and returns its case_id"""
+    """Validates contract JSON and saves it in the Contracts table; returns its id (ContractId)."""
     try:
         validate_case(req.data)
     except CaseValidationError as e:
@@ -162,31 +155,44 @@ def upload_case(req: UploadCaseRequest):
             detail="Uploaded case is missing required data or has invalid values: " + "; ".join(e.errors),
         )
 
-    # Assign the next sequential id (renewal_input_004, 005, ...) regardless of the uploaded filename,
-    # so uploads never overwrite an existing case and always follow the data folder's naming.
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    seq = _next_case_number()
-    case_stem = f"{CASE_PREFIX}{seq:03d}"
-    save_path = _case_path(case_stem)
-
+    uploaded_by = (req.uploaded_by or "").strip() or None
+    display_name = _clean_filename(req.filename) or "Uploaded contract"
     data = dict(req.data)
-    data["case_id"] = f"RENEWAL-{date.today().year}-{seq:03d}"
-    display_name = _clean_filename(req.filename) or case_stem
-    data[DISPLAY_NAME_KEY] = display_name
-    try:
-        # "x" mode fails instead of overwriting if the file somehow already exists
-        with open(save_path, "x", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-    except FileExistsError:
-        raise HTTPException(status_code=409, detail=f"Case '{case_stem}' already exists; please retry.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+    with session_scope() as s:
+        contract = repo.add_contract(
+            s,
+            display_name=display_name,
+            original_filename=(req.filename or "")[:260] or None,
+            uploaded_by=uploaded_by,
+            data=data,
+        )
+        # The brief shows the JSON's case_id; make it unique from the new ContractId.
+        data["case_id"] = f"RENEWAL-{date.today().year}-{contract.id:03d}"
+        repo.set_contract_json(contract, data)
     return {
         "message": "File uploaded successfully",
-        "case_id": case_stem,
-        "renewal_id": data["case_id"],
+        "case_id": contract.id,
         "original_filename": req.filename,
         "display_name": display_name,
+    }
+
+
+@app.post("/api/exports")
+def record_pdf_export(req: PdfExportRequest):
+    """Records who exported which generated brief as PDF, and when (PdfExports table)."""
+    exported_by = req.exported_by.strip()
+    if not exported_by:
+        raise HTTPException(status_code=422, detail="exported_by is required.")
+    with session_scope() as s:
+        result = repo.get_result(s, req.result_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"Result {req.result_id} not found. Generate the brief again.")
+        export = repo.add_export(s, result, exported_by)
+    return {
+        "export_id": export.id,
+        "result_id": export.result_id,
+        "exported_by": export.exported_by,
+        "exported_at": export.exported_at.isoformat(sep=" "),
     }
 
 

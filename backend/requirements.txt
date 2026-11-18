@@ -4,3 +4,5 @@ pydantic>=2.7.1
 python-dotenv>=1.0.1
 pytest>=8.0
 httpx>=0.27
+sqlalchemy>=2.1
+mssql-python>=1.0

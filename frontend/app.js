@@ -36,6 +36,55 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 let currentMoveTrace = [];
+let currentResultId = null;
+
+// The user's name for upload / PDF-export records. There is no login, so it is asked once
+// and remembered in this browser.
+const USER_NAME_KEY = "renewalDesk.userName";
+
+function getSavedUserName() {
+  try { return (localStorage.getItem(USER_NAME_KEY) || "").trim(); } catch (_) { return ""; }
+}
+
+function saveUserName(name) {
+  try { localStorage.setItem(USER_NAME_KEY, name); } catch (_) { /* storage blocked: ask again next time */ }
+}
+
+/**
+ * Export PDF: ask who is exporting, record it (PdfExports), stamp the page, then open print.
+ */
+async function exportPdf() {
+  if (!currentResultId) {
+    notify({ type: "error", title: "Generate the brief first", message: "Press Generate brief, then export." });
+    return;
+  }
+  const answer = window.prompt("Your name (saved with this PDF export):", getSavedUserName());
+  if (answer === null) return;                 // cancelled
+  const name = answer.trim().slice(0, 100);
+  if (!name) {
+    notify({ type: "error", title: "Name is required", message: "Enter your name to export the PDF." });
+    return;
+  }
+  saveUserName(name);
+  try {
+    const res = await fetch(`${API_BASE}/api/exports`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ result_id: currentResultId, exported_by: name }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Could not record the export");
+    }
+    const rec = await res.json();
+    const stamp = document.getElementById("exportStamp");
+    if (stamp) stamp.textContent = `Exported by ${rec.exported_by} on ${rec.exported_at}`;
+  } catch (err) {
+    notify({ type: "error", title: "PDF export not recorded", message: err.message });
+    return;
+  }
+  window.print();
+}
 
 const KOZMO_MOVES = [
   { id: "M01", name: "M01 Goals" },
@@ -90,9 +139,7 @@ function setupEventListeners() {
     }
   });
 
-  printBtn.addEventListener("click", () => {
-    window.print();
-  });
+  printBtn.addEventListener("click", exportPdf);
 
   if (flowModalBtn && moveFlowModal) {
     flowModalBtn.addEventListener("click", () => {
@@ -144,7 +191,7 @@ function setupEventListeners() {
         const res = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name, data: parsed })
+          body: JSON.stringify({ filename: file.name, data: parsed, uploaded_by: getSavedUserName() || null })
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -196,7 +243,7 @@ async function loadCaseList(preferredCaseId = null) {
       countEl.textContent = `${n} case${n === 1 ? "" : "s"} available`;
     }
     // Each case: its id plus the name to show (the uploaded file's own name for uploads).
-    const items = data.items || (data.cases || []).map((c) => ({ id: c, name: c.replace(/_/g, " ") }));
+    const items = data.items || (data.cases || []).map((c) => ({ id: c, name: `Case ${c}` }));
     if (items.length > 0) {
       items.forEach(({ id, name }) => {
         const opt = document.createElement("option");
@@ -207,7 +254,7 @@ async function loadCaseList(preferredCaseId = null) {
       renderStartCases(items);
       // Only evaluate straight away when a case was asked for (e.g. just uploaded).
       // Otherwise the start panel stays up until the user picks a case.
-      if (preferredCaseId && data.cases.includes(preferredCaseId)) {
+      if (preferredCaseId && data.cases.map(String).includes(String(preferredCaseId))) {
         caseSelect.value = preferredCaseId;
         loadCaseBrief(preferredCaseId);
       }
@@ -305,9 +352,13 @@ async function loadCaseBrief(caseId, minMs = 0) {
   const minDelay = new Promise((resolve) => setTimeout(resolve, minMs));
   try {
     const asOf = document.getElementById("asOfInput")?.value;
-    const query = asOf ? `?as_of=${encodeURIComponent(asOf)}` : "";
+    // POST /api/process runs the pipeline and saves the result (EvaluationResults).
     const [res] = await Promise.all([
-      fetch(`${API_BASE}/api/case/${encodeURIComponent(caseId)}${query}`),
+      fetch(`${API_BASE}/api/process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ case_id: caseId, as_of: asOf || null }),
+      }),
       minDelay,
     ]);
     if (!res.ok) {
@@ -318,6 +369,10 @@ async function loadCaseBrief(caseId, minMs = 0) {
 
     // Store the move trace for the Move Flow modal
     currentMoveTrace = brief.meta?.move_trace || [];
+    // Saved result id: needed to record a PDF export of this brief.
+    currentResultId = brief.meta?.result_id ?? null;
+    const stamp = document.getElementById("exportStamp");
+    if (stamp) stamp.textContent = "";
 
     // Render the Kozmo Move pipeline bar
     renderMovePipeline(currentMoveTrace);

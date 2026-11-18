@@ -2123,6 +2123,12 @@ button.start-option:hover { background: var(--brand-pale); border-color: var(--b
 
 @media print { .info-tip { display: none !important; } }
 
+/* "Exported by … on …" line: printed PDF only */
+.export-stamp { display: none; }
+@media print {
+  .export-stamp:not(:empty) { display: block; margin: 0 0 8px; text-align: right; font-size: 9pt; color: #555; }
+}
+
 /* Sidebar polish: room for the info icons, tips that fit inside the sidebar */
 .sb-sub { margin-left: 12px; }
 .sb-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

@@ -161,9 +161,16 @@ class RenewalInputData(_Strict):
 
 
 class ProcessRequest(BaseModel):
-    case_id: str = Field(pattern=r"^[A-Za-z0-9_\-]+$")
+    case_id: int  # Contracts.ContractId
+    as_of: Optional[date] = None
 
 
 class UploadCaseRequest(BaseModel):
     filename: str
     data: Dict[str, Any]
+    uploaded_by: Optional[str] = Field(default=None, max_length=100)
+
+
+class PdfExportRequest(BaseModel):
+    result_id: int
+    exported_by: str = Field(min_length=1, max_length=100)

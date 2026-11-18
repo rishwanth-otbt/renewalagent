@@ -31,3 +31,19 @@ def valid_case_files() -> list:
 
 def case_key(path: Path) -> str:
     return f"{path.parent.name}/{path.stem}"
+
+
+# --------------------------------------------------------------------------- database
+import pytest  # noqa: E402
+
+from app.db import database  # noqa: E402
+from app.db import models  # noqa: E402,F401  (registers the tables)
+
+
+@pytest.fixture(autouse=True)
+def test_db():
+    """Every test gets a fresh in-memory SQLite database; the real SQL Server is never touched."""
+    engine = database.configure("sqlite://")
+    database.Base.metadata.create_all(engine)
+    yield engine
+    engine.dispose()

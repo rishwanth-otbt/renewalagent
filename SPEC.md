@@ -81,7 +81,9 @@ The web UI shows the brief, lets the user switch or upload cases, view the Move 
 backend/app/core/     framework: base move, dossier, orchestrator
 backend/app/models/   input schema, renewal policy
 backend/app/moves/    one file per move
-backend/data/         stored cases
+backend/app/db/       SQL Server storage: connection, ORM models, queries
+backend/data/         case fixtures for tests (import into the database with migration/import_json_cases.py)
+backend/migration/    SQL scripts that create the renewaldesk database + import script
 backend/policies/     saved policy versions (runtime data, git-ignored)
 backend/tests/        golden, boundary, policy and API tests (pytest)
 backend/main.py       API + static hosting

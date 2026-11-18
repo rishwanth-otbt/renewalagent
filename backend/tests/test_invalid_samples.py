@@ -9,11 +9,11 @@ INVALID = sorted(SAMPLES_DIR.glob("*rejected_422*.json"))
 
 
 @pytest.mark.parametrize("path", INVALID, ids=lambda p: p.stem)
-def test_invalid_sample_is_rejected(path, tmp_path, monkeypatch):
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path)  # never write into backend/data
-    r = TestClient(main.app).post("/api/upload", json={"filename": path.name, "data": load_json(path)})
+def test_invalid_sample_is_rejected(path):
+    client = TestClient(main.app)
+    r = client.post("/api/upload", json={"filename": path.name, "data": load_json(path)})
     assert r.status_code == 422
-    assert list(tmp_path.iterdir()) == []
+    assert client.get("/api/cases").json()["cases"] == []  # nothing was stored
 
 
 def test_there_are_invalid_samples():
