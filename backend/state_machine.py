@@ -156,6 +156,7 @@ class RenewalStateMachine:
                 "renewal_deadline": self.extracted.get("renewal_deadline"),
                 "notice_deadline": self.extracted.get("notice_deadline"),
                 "notice_days": self.extracted.get("notice_days", 60),
+                "current_term_months": self.extracted.get("current_term_months", 12),
                 "notice_at_risk": self.calculations.get("notice_at_risk", False),
                 "decision": recommendation.get("decision", "Renegotiate"),
                 "confidentiality": "CONFIDENTIAL · EXECUTIVE BRIEF",

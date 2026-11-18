@@ -1,0 +1,149 @@
+{
+  "case_id": "RENEWAL-2026-003",
+
+  "vendor": {
+    "name": "LegacyERP Global",
+    "service_type": "Enterprise Financials & Operations Suite",
+    "account_manager": "Robert Vance",
+    "account_manager_email": "rvance@legacyerp.com",
+    "vendor_tier": "Legacy Vendor"
+  },
+
+  "msa": {
+    "contract_id": "MSA-LERP-2021-098",
+    "signed_date": "2021-12-01",
+    "current_term_start": "2023-12-01",
+    "current_term_end": "2026-12-31",
+    "notice_period_days": 60,
+    "auto_renewal": true,
+    "governing_law": "California, USA",
+    "payment_terms_days": 30,
+    "termination_for_convenience": false,
+    "price_increase_cap_pct": null
+  },
+
+  "current_pricing": {
+    "annual_contract_value": 650000,
+    "total_seats": 500,
+    "unit_price_per_seat": 1300,
+    "billing_frequency": "annual",
+    "modules_included": ["General Ledger", "Accounts Payable", "Inventory Core", "Fixed Assets"],
+    "currency": "USD"
+  },
+
+  "vendor_proposal": {
+    "received_date": "2026-10-01",
+    "proposed_annual_value": 910000,
+    "proposed_seats": 500,
+    "proposed_unit_price": 1820,
+    "proposed_term_months": 36,
+    "proposed_modules": ["General Ledger", "Accounts Payable", "Inventory Core", "Fixed Assets", "Mandatory Cloud Maintenance Fee"],
+    "price_increase_justification": "Legacy hosting datacenter surcharge and mandatory transition to managed cloud infrastructure",
+    "proposal_expiry_date": "2026-11-25"
+  },
+
+  "sla": {
+    "contracted_uptime_pct": 99.9,
+    "contracted_support_response_hours": 2,
+    "contracted_resolution_hours": 12,
+    "actual_uptime_pct": 98.6,
+    "actual_support_sla_achievement_pct": 42.0,
+    "critical_incidents_count": 7,
+    "critical_incidents_detail": [
+      { "date": "2024-02-14", "duration_hours": 8.0, "impacted_users": 500 },
+      { "date": "2024-06-30", "duration_hours": 12.5, "impacted_users": 500 },
+      { "date": "2024-11-19", "duration_hours": 6.0, "impacted_users": 350 },
+      { "date": "2025-03-31", "duration_hours": 14.0, "impacted_users": 500 },
+      { "date": "2025-08-12", "duration_hours": 4.5, "impacted_users": 400 },
+      { "date": "2025-12-31", "duration_hours": 16.0, "impacted_users": 500 },
+      { "date": "2026-06-15", "duration_hours": 9.0, "impacted_users": 500 }
+    ],
+    "service_credits_claimed_usd": 0,
+    "service_credits_available_usd": 72000
+  },
+
+  "addendum": [
+    {
+      "addendum_id": "ADD-LERP-01",
+      "signed_date": "2022-04-10",
+      "description": "Custom Oracle DB Connector Maintenance",
+      "expiry": "2024-04-10",
+      "status": "expired"
+    }
+  ],
+
+  "usage": {
+    "total_provisioned_seats": 500,
+    "active_seats_last_90_days": 270,
+    "inactive_seats": 230,
+    "departments": [
+      { "name": "Corporate Accounting", "provisioned": 150, "active": 120 },
+      { "name": "Supply Chain & Ops",   "provisioned": 250, "active": 110 },
+      { "name": "Executive & Audit",     "provisioned": 100, "active": 40  }
+    ],
+    "feature_adoption": {
+      "general_ledger_pct": 88,
+      "accounts_payable_pct": 65,
+      "inventory_core_pct": 45,
+      "fixed_assets_pct": 28
+    }
+  },
+
+  "roadmap": {
+    "promised_milestones": [
+      { "feature": "Automated Reconciliation v2",  "promised_date": "2024-06-01", "delivered": false, "actual_date": null },
+      { "feature": "Real-time Multi-Currency API", "promised_date": "2024-12-01", "delivered": false, "actual_date": null },
+      { "feature": "REST API Gateway",             "promised_date": "2025-06-01", "delivered": true,  "actual_date": "2025-11-20" },
+      { "feature": "Modern Web Interface",         "promised_date": "2025-12-01", "delivered": false, "actual_date": null },
+      { "feature": "Automated Tax Compliance",     "promised_date": "2026-06-01", "delivered": false, "actual_date": null }
+    ]
+  },
+
+  "emails": [
+    {
+      "date": "2026-09-15",
+      "from": "rvance@legacyerp.com",
+      "subject": "Mandatory Legacy Surcharge Notification for 2027 Renewal",
+      "summary": "Vendor announced 40% mandatory hike due to ending support for on-premise infrastructure."
+    },
+    {
+      "date": "2026-10-02",
+      "from": "cfo@acme.com",
+      "subject": "RE: LegacyERP Renewal — Escalate to Procurement Immediately",
+      "summary": "CFO rejected the 40% increase citing recurring quarter-end downtime and mandated an immediate RFP."
+    }
+  ],
+
+  "renewal_history": [
+    {
+      "renewal_cycle": "2021-2023",
+      "original_acv": 520000,
+      "renewed_acv": 580000,
+      "increase_pct": 11.5,
+      "seats": 450,
+      "term_months": 24,
+      "outcome": "Renewed with custom connector addendum",
+      "negotiated_savings_usd": 20000
+    },
+    {
+      "renewal_cycle": "2023-2026",
+      "original_acv": 580000,
+      "renewed_acv": 650000,
+      "increase_pct": 12.1,
+      "seats": 500,
+      "term_months": 36,
+      "outcome": "Renewed under pressure during supply chain transition",
+      "negotiated_savings_usd": 15000
+    }
+  ],
+
+  "internal_assessment": {
+    "strategic_importance": "High",
+    "replacement_difficulty": "High",
+    "known_alternatives": ["Workday Financials", "NetSuite OneWorld", "SAP S/4HANA Public Cloud"],
+    "migration_estimate_months": 8,
+    "internal_champion": "VP Corporate Controller",
+    "budget_owner": "CFO",
+    "approved_budget_acv": 700000
+  }
+}

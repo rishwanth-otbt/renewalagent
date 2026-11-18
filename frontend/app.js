@@ -196,12 +196,17 @@ function renderBrief(data) {
 
   // 2. Section 1: Financial Impact
   const finTableBody = document.querySelector("#financialTable tbody");
+  const currentMonths = meta.current_term_months || 12;
+  const proposedMonths = vendor.proposed_term_months || 36;
+  const termDelta = proposedMonths - currentMonths;
+  const termDeltaStr = termDelta > 0 ? `+${termDelta} months extension` : (termDelta === 0 ? "Same duration" : `${termDelta} months`);
+
   finTableBody.innerHTML = `
     <tr>
       <td><strong>Annual Contract Value (ACV)</strong></td>
       <td>${fmtCurrency(fin.current_acv)}</td>
       <td>${fmtCurrency(fin.proposed_acv)}</td>
-      <td><span class="status-chip ${fin.increase_pct > 10 ? 'high' : 'warn'}">${fmtPct(fin.increase_pct)} (${fmtCurrency(fin.increase_usd)})</span></td>
+      <td><span class="status-chip ${fin.increase_pct > 10 ? 'high' : (fin.increase_pct > 0 ? 'warn' : 'ok')}">${fmtPct(fin.increase_pct)} (${fmtCurrency(fin.increase_usd)})</span></td>
     </tr>
     <tr>
       <td><strong>Provisioned License Quantity</strong></td>
@@ -217,9 +222,9 @@ function renderBrief(data) {
     </tr>
     <tr>
       <td><strong>Contract Duration</strong></td>
-      <td>12 months</td>
-      <td>${vendor.proposed_term_months} months</td>
-      <td>+24 months lock-in</td>
+      <td>${currentMonths} months</td>
+      <td>${proposedMonths} months</td>
+      <td>${termDeltaStr}</td>
     </tr>
     <tr>
       <td><strong>Approved Internal Budget</strong></td>
@@ -233,12 +238,21 @@ function renderBrief(data) {
   document.getElementById("expTarget").textContent = fmtCurrency(fin.three_year_target);
 
   const findingsList = document.getElementById("licenseFindingsList");
-  findingsList.innerHTML = `
-    <li>Active utilization measured at <strong>${seats.utilization_pct}%</strong> (${seats.active} active of ${seats.total} provisioned seats).</li>
-    <li>Approximately <strong>${seats.inactive} licenses</strong> have zero activity in the last 90 days.</li>
-    <li>Recommended optimized seat baseline: <strong>${seats.recommended_seats} seats</strong> (active plus 9% growth headroom).</li>
-    <li>Identified reduction opportunity of <strong>${seats.reduction_opportunity} licenses</strong>, representing <strong>${fmtCurrency(seats.annualized_exposure_usd)}</strong> in cost exposure.</li>
-  `;
+  if (seats.reduction_opportunity > 0) {
+    findingsList.innerHTML = `
+      <li>Active utilization measured at <strong>${seats.utilization_pct}%</strong> (${seats.active} active of ${seats.total} provisioned seats).</li>
+      <li>Approximately <strong>${seats.inactive} licenses</strong> have zero activity in the last 90 days.</li>
+      <li>Recommended optimized seat baseline: <strong>${seats.recommended_seats} seats</strong> (active plus growth headroom).</li>
+      <li>Identified reduction opportunity of <strong>${seats.reduction_opportunity} licenses</strong>, representing <strong>${fmtCurrency(seats.annualized_exposure_usd)}</strong> in cost exposure.</li>
+    `;
+  } else {
+    findingsList.innerHTML = `
+      <li>Active utilization is strong at <strong>${seats.utilization_pct}%</strong> (${seats.active} of ${seats.total} seats active).</li>
+      <li>Seat adoption is healthy across all business units with zero identifiable license shelfware.</li>
+      <li>Recommended baseline: <strong>Retain full ${seats.total} licenses</strong> without volume reduction.</li>
+      <li>Focus negotiation strictly on multi-year price locks and service levels.</li>
+    `;
+  }
 
   // 3. Section 2: Historical Trend
   document.getElementById("histAvgIncrease").textContent = `${history.avg_historical_increase_pct}%`;
@@ -280,13 +294,13 @@ function renderBrief(data) {
       <td>Critical Production Incidents</td>
       <td>0</td>
       <td><strong>${perf.critical_incidents}</strong></td>
-      <td><span class="status-chip ${perf.critical_incidents > 0 ? 'below' : 'ok'}">Requires Review</span></td>
+      <td><span class="status-chip ${perf.critical_incidents > 0 ? 'below' : 'ok'}">${perf.critical_incidents > 0 ? 'Requires Review' : 'Zero Outages (Met)'}</span></td>
     </tr>
     <tr>
       <td>License Seat Utilization</td>
       <td>90.0%</td>
       <td><strong>${seats.utilization_pct}%</strong></td>
-      <td><span class="status-chip warn">Optimization Target</span></td>
+      <td><span class="status-chip ${seats.utilization_pct >= 90 ? 'ok' : 'warn'}">${seats.utilization_pct >= 90 ? 'Optimal Adoption' : 'Optimization Target'}</span></td>
     </tr>
     <tr>
       <td>Roadmap Milestones Delivered</td>

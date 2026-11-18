@@ -13,19 +13,24 @@ def extract_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
     internal = raw.get("internal_assessment", {})
     addenda = raw.get("addendum", [])
 
-    # Calculate notice deadline
+    # Calculate contract duration and notice deadline
     renewal_end_str = msa.get("current_term_end", "2027-01-31")
+    renewal_start_str = msa.get("current_term_start", "2024-02-01")
     notice_days = msa.get("notice_period_days", 60)
+    
+    current_term_months = 12
     try:
+        start_dt = datetime.strptime(renewal_start_str, "%Y-%m-%d")
         end_dt = datetime.strptime(renewal_end_str, "%Y-%m-%d")
         notice_dt = end_dt - timedelta(days=notice_days)
         notice_deadline_str = notice_dt.strftime("%Y-%m-%d")
+        # Approximate months
+        current_term_months = max(1, round((end_dt - start_dt).days / 30.4))
     except Exception:
         notice_deadline_str = "2026-12-02"
 
     assessment_date_str = datetime.now().strftime("%Y-%m-%d")
 
-    # Standard renewal timeline execution plan
     timeline = {
         "total_duration": "4–6 weeks",
         "steps": [
@@ -39,7 +44,7 @@ def extract_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
                 "phase": "Market and alternative benchmarking",
                 "duration": "3–5 working days",
                 "owners": ["Procurement", "IT"],
-                "description": "Identify competing vendors, comparable offerings and switching complexity."
+                "description": f"Identify competing vendors ({', '.join(internal.get('known_alternatives', [])) or 'industry standard'}), comparable pricing and switching complexity."
             },
             {
                 "phase": "Stakeholder and technical assessment",
@@ -81,6 +86,7 @@ def extract_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
         "renewal_deadline": renewal_end_str,
         "notice_deadline": notice_deadline_str,
         "notice_days": notice_days,
+        "current_term_months": current_term_months,
         "auto_renewal": msa.get("auto_renewal", True),
         "termination_for_convenience": msa.get("termination_for_convenience", False),
         
@@ -113,6 +119,7 @@ def extract_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
         
         "approved_budget_acv": float(internal.get("approved_budget_acv", 0)),
         "strategic_importance": internal.get("strategic_importance", "Medium"),
+        "replacement_difficulty": internal.get("replacement_difficulty", "Medium"),
         "known_alternatives": internal.get("known_alternatives", []),
         "migration_estimate_months": internal.get("migration_estimate_months", 6),
         "timeline": timeline

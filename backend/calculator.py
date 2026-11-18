@@ -15,25 +15,34 @@ def run_calculations(extracted: Dict[str, Any], comparison: Dict[str, Any]) -> D
     increase_usd = round(proposed_acv - current_acv, 2)
     increase_pct = round((increase_usd / current_acv * 100), 1) if current_acv > 0 else 0.0
     
-    # 3-year figures
-    three_year_baseline = round(current_acv * 3, 2)
+    # Term baseline & proposal calculations
+    three_year_baseline = round(current_acv * (proposed_term_months / 12.0), 2)
     three_year_proposal = round(proposed_acv * (proposed_term_months / 12.0), 2)
     
-    # Negotiation target: aligned with approved budget if present, else +4% cap
+    # Negotiation target calculation:
     if approved_budget_acv > 0:
-        negotiation_target_acv = approved_budget_acv
+        if proposed_acv <= approved_budget_acv and increase_pct <= 5.0:
+            negotiation_target_acv = proposed_acv
+        else:
+            negotiation_target_acv = approved_budget_acv
     else:
-        negotiation_target_acv = round(current_acv * 1.04, 2)
+        negotiation_target_acv = round(current_acv * 1.03, 2)
         
-    three_year_target = round(negotiation_target_acv * 3, 2)
+    three_year_target = round(negotiation_target_acv * (proposed_term_months / 12.0), 2)
     budget_gap_usd = round(proposed_acv - approved_budget_acv, 2) if approved_budget_acv > 0 else 0.0
 
     # Seat utilization & optimization
     utilization_pct = round((active_seats / total_seats * 100), 1) if total_seats > 0 else 0.0
-    # Recommended seats: active + 10% headroom
-    recommended_seats = int(round(active_seats * 1.09)) # e.g. 780 * ~1.09 = 850
-    reduction_opportunity = max(0, total_seats - recommended_seats)
-    seat_exposure_usd = round(reduction_opportunity * proposed_unit_price, 2)
+    
+    if utilization_pct >= 90.0:
+        recommended_seats = total_seats
+        reduction_opportunity = 0
+        seat_exposure_usd = 0.0
+    else:
+        # Buffer 8-10% above active seats
+        recommended_seats = min(total_seats, int(round(active_seats * 1.09)))
+        reduction_opportunity = max(0, total_seats - recommended_seats)
+        seat_exposure_usd = round(reduction_opportunity * proposed_unit_price, 2)
 
     # Performance calculations
     contracted_uptime = extracted.get("contracted_uptime", 99.9)
