@@ -1,0 +1,740 @@
+{
+  "data/renewal_input_001": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Commercial price increase (+20.0%)",
+        "High"
+      ],
+      [
+        "Underutilized licenses (220 inactive seats)",
+        "Medium"
+      ],
+      [
+        "Bundled new modules (AI Module)",
+        "Medium"
+      ],
+      [
+        "Chronic SLA underperformance & disruption",
+        "High"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ],
+      [
+        "No termination for convenience clause",
+        "Medium"
+      ],
+      [
+        "Roadmap delivery backlogs",
+        "Medium"
+      ],
+      [
+        "Imminent 60-day notice deadline (14 days left)",
+        "High"
+      ]
+    ],
+    "increase_pct": 20.0,
+    "budget_gap_usd": 190000.0,
+    "negotiation_target_acv": 1250000.0,
+    "three_year_target": 3750000.0,
+    "cap_breach": false,
+    "performance_rating": "Needs Improvement",
+    "utilization_pct": 78.0,
+    "recommended_seats": 850,
+    "reduction_opportunity": 150,
+    "renewal_type": "FLAT",
+    "notice_status": "IMMINENT_RISK",
+    "n_objectives": 8,
+    "n_drivers": 5,
+    "n_success_criteria": 3,
+    "timeline_phases": 7
+  },
+  "data/renewal_input_002": {
+    "decision": "Renew",
+    "switch_downgraded": false,
+    "risk_level": "Low",
+    "risk_items": [
+      [
+        "Bundled new modules (Cloud Workload Protection)",
+        "Low"
+      ]
+    ],
+    "increase_pct": 3.0,
+    "budget_gap_usd": -8000.0,
+    "negotiation_target_acv": 412000.0,
+    "three_year_target": 1236000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 97.0,
+    "recommended_seats": 2000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 5,
+    "n_drivers": 1,
+    "n_success_criteria": 3,
+    "timeline_phases": 3
+  },
+  "data/renewal_input_003": {
+    "decision": "Switch / Benchmark",
+    "switch_downgraded": false,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Severe price escalation (+40.0%)",
+        "High"
+      ],
+      [
+        "Underutilized licenses (230 inactive seats)",
+        "Medium"
+      ],
+      [
+        "Bundled new modules (Mandatory Cloud Maintenance Fee)",
+        "Medium"
+      ],
+      [
+        "Chronic SLA underperformance & disruption",
+        "High"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ],
+      [
+        "No termination for convenience clause",
+        "Medium"
+      ],
+      [
+        "Roadmap delivery backlogs",
+        "Medium"
+      ],
+      [
+        "Notice deadline missed (2026-11-01)",
+        "High"
+      ]
+    ],
+    "increase_pct": 40.0,
+    "budget_gap_usd": 210000.0,
+    "negotiation_target_acv": 700000.0,
+    "three_year_target": 2100000.0,
+    "cap_breach": false,
+    "performance_rating": "Needs Improvement",
+    "utilization_pct": 54.0,
+    "recommended_seats": 294,
+    "reduction_opportunity": 206,
+    "renewal_type": "FLAT",
+    "notice_status": "AUTO_RENEWED_LOCK_IN",
+    "n_objectives": 6,
+    "n_drivers": 5,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "data/renewal_input_004": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Commercial price increase (+12.5%)",
+        "Medium"
+      ],
+      [
+        "Proposal breaches contractual 7% price-increase cap",
+        "High"
+      ],
+      [
+        "Underutilized licenses (340 inactive seats)",
+        "Medium"
+      ],
+      [
+        "Bundled new modules (Identity Threat Detection)",
+        "Medium"
+      ],
+      [
+        "Imminent 90-day notice deadline (12 days left)",
+        "High"
+      ]
+    ],
+    "increase_pct": 12.5,
+    "budget_gap_usd": 22000.0,
+    "negotiation_target_acv": 410000.0,
+    "three_year_target": 820000.0,
+    "cap_breach": true,
+    "performance_rating": "Acceptable",
+    "utilization_pct": 89.4,
+    "recommended_seats": 3117,
+    "reduction_opportunity": 83,
+    "renewal_type": "FLAT",
+    "notice_status": "IMMINENT_RISK",
+    "n_objectives": 9,
+    "n_drivers": 6,
+    "n_success_criteria": 3,
+    "timeline_phases": 7
+  },
+  "data/renewal_input_005": {
+    "decision": "Switch / Benchmark",
+    "switch_downgraded": false,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Severe price escalation (+35.0%)",
+        "High"
+      ],
+      [
+        "Proposal breaches contractual 7% price-increase cap",
+        "High"
+      ],
+      [
+        "Underutilized licenses (340 inactive seats)",
+        "Medium"
+      ],
+      [
+        "Bundled new modules (Identity Threat Detection)",
+        "Medium"
+      ],
+      [
+        "Imminent 90-day notice deadline (12 days left)",
+        "High"
+      ]
+    ],
+    "increase_pct": 35.0,
+    "budget_gap_usd": 108400.0,
+    "negotiation_target_acv": 410000.0,
+    "three_year_target": 820000.0,
+    "cap_breach": true,
+    "performance_rating": "Acceptable",
+    "utilization_pct": 89.4,
+    "recommended_seats": 3117,
+    "reduction_opportunity": 83,
+    "renewal_type": "FLAT",
+    "notice_status": "IMMINENT_RISK",
+    "n_objectives": 7,
+    "n_drivers": 6,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/01_expect_renew_clean_good_performance_within_budget": {
+    "decision": "Renew",
+    "switch_downgraded": false,
+    "risk_level": "Low",
+    "risk_items": [
+      [
+        "Standard operational dependency",
+        "Low"
+      ]
+    ],
+    "increase_pct": 4.0,
+    "budget_gap_usd": -15000.0,
+    "negotiation_target_acv": 260000.0,
+    "three_year_target": 780000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 0,
+    "n_success_criteria": 3,
+    "timeline_phases": 3
+  },
+  "sample_uploads/02_expect_renegotiate_price_cap_breach_8pct_vs_6pct_cap": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium–High",
+    "risk_items": [
+      [
+        "Proposal breaches contractual 6% price-increase cap",
+        "High"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 8.0,
+    "budget_gap_usd": -20000.0,
+    "negotiation_target_acv": 265000.0,
+    "three_year_target": 795000.0,
+    "cap_breach": true,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 2,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/03_expect_renegotiate_over_budget_small_increase_no_price_cap": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Low",
+    "risk_items": [
+      [
+        "Standard operational dependency",
+        "Low"
+      ]
+    ],
+    "increase_pct": 4.0,
+    "budget_gap_usd": 5000.0,
+    "negotiation_target_acv": 255000.0,
+    "three_year_target": 765000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 3,
+    "n_drivers": 1,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/04_expect_switch_price_shock_40pct_easy_to_replace": {
+    "decision": "Switch / Benchmark",
+    "switch_downgraded": false,
+    "risk_level": "Medium–High",
+    "risk_items": [
+      [
+        "Severe price escalation (+40.0%)",
+        "High"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 40.0,
+    "budget_gap_usd": 75000.0,
+    "negotiation_target_acv": 275000.0,
+    "three_year_target": 825000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 2,
+    "n_success_criteria": 3,
+    "timeline_phases": 5
+  },
+  "sample_uploads/05_expect_switch_poor_sla_22pct_increase_not_downgraded_hard_to_replace": {
+    "decision": "Switch / Benchmark",
+    "switch_downgraded": false,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Commercial price increase (+22.0%)",
+        "High"
+      ],
+      [
+        "Chronic SLA underperformance & disruption",
+        "High"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 22.0,
+    "budget_gap_usd": 30000.0,
+    "negotiation_target_acv": 275000.0,
+    "three_year_target": 825000.0,
+    "cap_breach": false,
+    "performance_rating": "Needs Improvement",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 3,
+    "n_success_criteria": 3,
+    "timeline_phases": 5
+  },
+  "sample_uploads/06_expect_renegotiate_needs_improvement_outages_roadmap_backlog_low_increase": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium–High",
+    "risk_items": [
+      [
+        "Chronic SLA underperformance & disruption",
+        "High"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ],
+      [
+        "Roadmap delivery backlogs",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 3.0,
+    "budget_gap_usd": -17500.0,
+    "negotiation_target_acv": 257500.0,
+    "three_year_target": 772500.0,
+    "cap_breach": false,
+    "performance_rating": "Needs Improvement",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 1,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/07_expect_notice_imminent_risk_cutoff_within_21_days": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium–High",
+    "risk_items": [
+      [
+        "36-month term lock-in",
+        "Medium"
+      ],
+      [
+        "Imminent 90-day notice deadline (17 days left)",
+        "High"
+      ]
+    ],
+    "increase_pct": 9.0,
+    "budget_gap_usd": -7500.0,
+    "negotiation_target_acv": 280000.0,
+    "three_year_target": 840000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "IMMINENT_RISK",
+    "n_objectives": 4,
+    "n_drivers": 1,
+    "n_success_criteria": 3,
+    "timeline_phases": 7
+  },
+  "sample_uploads/08_expect_notice_missed_auto_renewal_lock_in_no_termination_right": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium–High",
+    "risk_items": [
+      [
+        "Commercial price increase (+12.0%)",
+        "Medium"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ],
+      [
+        "No termination for convenience clause",
+        "Medium"
+      ],
+      [
+        "Notice deadline missed (2026-10-17)",
+        "High"
+      ]
+    ],
+    "increase_pct": 12.0,
+    "budget_gap_usd": 10000.0,
+    "negotiation_target_acv": 270000.0,
+    "three_year_target": 810000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "AUTO_RENEWED_LOCK_IN",
+    "n_objectives": 4,
+    "n_drivers": 2,
+    "n_success_criteria": 3,
+    "timeline_phases": 7
+  },
+  "sample_uploads/09_expect_renew_notice_closed_no_auto_renewal_sign_before_lapse": {
+    "decision": "Renew",
+    "switch_downgraded": false,
+    "risk_level": "Medium",
+    "risk_items": [
+      [
+        "Notice window closed; contract lapses 2027-01-31",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 4.0,
+    "budget_gap_usd": -15000.0,
+    "negotiation_target_acv": 260000.0,
+    "three_year_target": 780000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "NOTICE_WINDOW_CLOSED",
+    "n_objectives": 5,
+    "n_drivers": 0,
+    "n_success_criteria": 3,
+    "timeline_phases": 4
+  },
+  "sample_uploads/10_expect_renegotiate_shelfware_68pct_with_unsupported_seat_expansion": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium–High",
+    "risk_items": [
+      [
+        "Commercial price increase (+20.0%)",
+        "High"
+      ],
+      [
+        "Underutilized licenses (320 inactive seats)",
+        "Medium"
+      ],
+      [
+        "Seat expansion (+200) not supported by usage",
+        "Medium"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 20.0,
+    "budget_gap_usd": -10000.0,
+    "negotiation_target_acv": 310000.0,
+    "three_year_target": 930000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 68.0,
+    "recommended_seats": 741,
+    "reduction_opportunity": 259,
+    "renewal_type": "EXPANSION",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 5,
+    "n_drivers": 3,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/11_expect_renew_seat_reduction_and_module_removed": {
+    "decision": "Renew",
+    "switch_downgraded": false,
+    "risk_level": "Low",
+    "risk_items": [
+      [
+        "Standard operational dependency",
+        "Low"
+      ]
+    ],
+    "increase_pct": -3.1,
+    "budget_gap_usd": -32750.0,
+    "negotiation_target_acv": 242250.0,
+    "three_year_target": 726750.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 91.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "REDUCTION",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 0,
+    "n_success_criteria": 3,
+    "timeline_phases": 3
+  },
+  "sample_uploads/12_expect_renegotiate_bundled_new_modules_and_36_month_lock_in": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium",
+    "risk_items": [
+      [
+        "Commercial price increase (+14.0%)",
+        "Medium"
+      ],
+      [
+        "Bundled new modules (UEBA Analytics, SOAR Playbooks)",
+        "Medium"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 14.0,
+    "budget_gap_usd": -15000.0,
+    "negotiation_target_acv": 300000.0,
+    "three_year_target": 900000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 2,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/13_expect_renegotiate_expired_addenda_and_unclaimed_service_credits": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Low",
+    "risk_items": [
+      [
+        "Standard operational dependency",
+        "Low"
+      ]
+    ],
+    "increase_pct": 5.0,
+    "budget_gap_usd": -12500.0,
+    "negotiation_target_acv": 262500.0,
+    "three_year_target": 787500.0,
+    "cap_breach": false,
+    "performance_rating": "Acceptable",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 1,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/demo_dataguard_price_shock_35pct": {
+    "decision": "Renegotiate",
+    "switch_downgraded": true,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Severe price escalation (+35.0%)",
+        "High"
+      ],
+      [
+        "Proposal breaches contractual 5% price-increase cap",
+        "High"
+      ],
+      [
+        "Bundled new modules (Cloud Workload Protection)",
+        "Medium"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 35.0,
+    "budget_gap_usd": 120000.0,
+    "negotiation_target_acv": 420000.0,
+    "three_year_target": 1260000.0,
+    "cap_breach": true,
+    "performance_rating": "Good",
+    "utilization_pct": 97.0,
+    "recommended_seats": 2000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 5,
+    "n_drivers": 4,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/demo_securenet_price_shock_35pct": {
+    "decision": "Switch / Benchmark",
+    "switch_downgraded": false,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Severe price escalation (+35.0%)",
+        "High"
+      ],
+      [
+        "Proposal breaches contractual 7% price-increase cap",
+        "High"
+      ],
+      [
+        "Underutilized licenses (340 inactive seats)",
+        "Medium"
+      ],
+      [
+        "Bundled new modules (Identity Threat Detection)",
+        "Medium"
+      ],
+      [
+        "Imminent 90-day notice deadline (12 days left)",
+        "High"
+      ]
+    ],
+    "increase_pct": 35.0,
+    "budget_gap_usd": 108400.0,
+    "negotiation_target_acv": 410000.0,
+    "three_year_target": 820000.0,
+    "cap_breach": true,
+    "performance_rating": "Acceptable",
+    "utilization_pct": 89.4,
+    "recommended_seats": 3117,
+    "reduction_opportunity": 83,
+    "renewal_type": "FLAT",
+    "notice_status": "IMMINENT_RISK",
+    "n_objectives": 7,
+    "n_drivers": 6,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/securenet_edr_renewal": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Commercial price increase (+12.5%)",
+        "Medium"
+      ],
+      [
+        "Proposal breaches contractual 7% price-increase cap",
+        "High"
+      ],
+      [
+        "Underutilized licenses (340 inactive seats)",
+        "Medium"
+      ],
+      [
+        "Bundled new modules (Identity Threat Detection)",
+        "Medium"
+      ],
+      [
+        "Imminent 90-day notice deadline (12 days left)",
+        "High"
+      ]
+    ],
+    "increase_pct": 12.5,
+    "budget_gap_usd": 22000.0,
+    "negotiation_target_acv": 410000.0,
+    "three_year_target": 820000.0,
+    "cap_breach": true,
+    "performance_rating": "Acceptable",
+    "utilization_pct": 89.4,
+    "recommended_seats": 3117,
+    "reduction_opportunity": 83,
+    "renewal_type": "FLAT",
+    "notice_status": "IMMINENT_RISK",
+    "n_objectives": 9,
+    "n_drivers": 6,
+    "n_success_criteria": 3,
+    "timeline_phases": 7
+  }
+}
