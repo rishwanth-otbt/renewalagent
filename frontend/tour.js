@@ -13,9 +13,9 @@
     { el: "#reloadBtn", title: "Generate brief",
       text: "Runs the move pipeline again for the selected case and redraws the brief." },
     { el: ".pipeline-container", title: "Move pipeline",
-      text: "Shows each move the agent ran, from goals to the final recommendation." },
-    { el: "#flowModalBtn", title: "Move flow trace",
-      text: "Open the step-by-step trace: which gates passed and which actions ran." },
+      text: "Shows each move the agent ran, from goals to the final recommendation. Click a move to see its actions." },
+    { el: "#runPanelBtn", title: "Agent run",
+      text: "Opens the side panel: every move the agent ran, and inside each one which gates passed and which actions ran or were skipped." },
     { el: "#printBtn", title: "Export PDF",
       text: "Once a brief is ready, save or print it as a one-page PDF." },
   ];

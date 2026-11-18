@@ -60,11 +60,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         </span>
       </button>
-      <button type="button" class="sb-link" id="flowModalBtn" title="Move flow trace">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-        <span class="sb-text">Move flow trace</span>
-        <span class="info-tip" tabindex="0" role="img" aria-label="See every step the agent ran for this brief: which checks (gates) passed and which actions ran or were skipped." data-tip="See every step the agent ran for this brief: which checks (gates) passed and which actions ran or were skipped."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-      </button>
       <button type="button" class="sb-link" id="tourBtn" title="Take a tour">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
         <span class="sb-text">Take a tour</span>
@@ -122,6 +117,10 @@
         <p class="page-subtitle">Pick a renewal case and an assessment date. The agent runs the move pipeline and drafts the executive decision brief below.</p>
       </div>
       <div class="page-actions">
+        <button type="button" class="rp-toggle" id="runPanelBtn" aria-controls="runPanel" aria-expanded="false" title="Show the moves and actions the agent runs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span id="runPanelBtnText">Agent run</span>
+        </button>
         <span class="info-tip" tabindex="0" role="img" aria-label="Save or print the current brief as a PDF. Available once a brief is generated." data-tip="Save or print the current brief as a PDF. Available once a brief is generated."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         <button id="printBtn" class="btn-primary" title="Generate a brief first" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -152,11 +151,21 @@
         </div>
       </div>
       <div class="pipeline-container">
-        <div class="pipeline-title">Move pipeline <span class="info-tip tip-left" tabindex="0" role="img" aria-label="The steps the agent runs, M01 to M10. A step turns green once it has run for this brief." data-tip="The steps the agent runs, M01 to M10. A step turns green once it has run for this brief."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></div>
+        <div class="pipeline-title">Move pipeline <span class="info-tip tip-left" tabindex="0" role="img" aria-label="The moves the agent runs, M01 to M10. A move turns green once it has run. Click one to see its actions." data-tip="The moves the agent runs, M01 to M10. A move turns green once it has run. Click one to see its actions."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></div>
         <div id="statePipeline" class="pipeline-steps">
           <!-- Injected by app.js -->
         </div>
       </div>
+    </section>
+
+    <!-- Agent activity: one row per move the agent ran (filled by app.js). Click a row to open it in the run panel. -->
+    <section class="run-log no-print" id="runLog" hidden>
+      <button type="button" class="rl-head" id="runLogHead" aria-expanded="true" aria-controls="runLogList">
+        <span class="rl-pulse" aria-hidden="true"></span>
+        <span class="rl-head-text" id="runLogSummary">Agent run</span>
+        <svg class="rl-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="rl-list" id="runLogList"></div>
     </section>
 
     <!-- POLICY DISABLED for this version
@@ -553,33 +562,30 @@
   </main>
 
   </div>
-</div>
 
-  <!-- Kozmo Move Graph Execution Modal (Hidden by default) -->
-  <div id="moveFlowModal" class="flow-modal-backdrop no-print" style="display: none;">
-    <div class="flow-modal-dialog">
-      <div class="flow-modal-header">
-        <div class="flow-modal-title">
-          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span>
-          <h3>Kozmo Renewal Desk — Move Graph Execution Trace</h3>
-        </div>
-        <button id="closeFlowModalBtn" class="flow-modal-close" title="Close modal">&times;</button>
+  <!-- ============ Right panel: agent run (moves → actions) ============ -->
+  <aside class="run-panel no-print" id="runPanel" aria-label="Agent run" hidden>
+    <div class="rp-head">
+      <span class="rp-avatar" aria-hidden="true">K</span>
+      <div class="rp-head-text">
+        <div class="rp-title">Renewal Agent</div>
+        <div class="rp-sub" id="rpStatus"><span class="rp-status-dot"></span>Not run yet</div>
       </div>
-      <div class="flow-modal-body">
-        <p class="flow-modal-desc">
-          Inspects the executed Move Graph. Shows which <strong>Actions</strong> executed, which <strong>Gates</strong> tested criteria, and which nodes were dynamically <strong>SKIPPED</strong> based on contract conditions.
-        </p>
-        <!-- Move Tabs -->
-        <div class="move-tabs" id="moveTabsContainer">
-          <!-- Populated by app.js -->
-        </div>
-        <!-- Move Detail Card -->
-        <div class="move-detail-container" id="moveDetailContainer">
-          <!-- Populated by app.js -->
-        </div>
-      </div>
+      <button type="button" class="rp-close" id="rpClose" aria-label="Close panel" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
-  </div>
+    <div class="rp-body">
+      <div class="rp-stats" id="rpStats"></div>
+      <div class="rp-section-label">
+        <span>Moves</span>
+        <button type="button" class="rp-link" id="rpExpandAll">Expand all</button>
+      </div>
+      <ol class="rp-timeline" id="rpTimeline"></ol>
+    </div>
+  </aside>
+  <div class="rp-backdrop no-print" id="rpBackdrop"></div>
+</div>
 
   <script src="notify.js"></script>
   <script src="app.js"></script>

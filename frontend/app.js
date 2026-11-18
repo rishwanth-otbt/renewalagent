@@ -101,9 +101,6 @@ function setupEventListeners() {
   const printBtn = document.getElementById("printBtn");
   const uploadBtn = document.getElementById("uploadBtn");
   const fileUploadInput = document.getElementById("fileUploadInput");
-  const flowModalBtn = document.getElementById("flowModalBtn");
-  const closeFlowModalBtn = document.getElementById("closeFlowModalBtn");
-  const moveFlowModal = document.getElementById("moveFlowModal");
 
   // Changing an input does not run the pipeline; it only flags "Generate brief".
   caseSelect.addEventListener("change", markInputsChanged);
@@ -141,25 +138,7 @@ function setupEventListeners() {
 
   printBtn.addEventListener("click", exportPdf);
 
-  if (flowModalBtn && moveFlowModal) {
-    flowModalBtn.addEventListener("click", () => {
-      openMoveFlowModal();
-    });
-  }
-
-  if (closeFlowModalBtn && moveFlowModal) {
-    closeFlowModalBtn.addEventListener("click", () => {
-      moveFlowModal.style.display = "none";
-    });
-  }
-
-  if (moveFlowModal) {
-    moveFlowModal.addEventListener("click", (e) => {
-      if (e.target === moveFlowModal) {
-        moveFlowModal.style.display = "none";
-      }
-    });
-  }
+  setupRunPanel();
 
   if (uploadBtn && fileUploadInput) {
     uploadBtn.addEventListener("click", () => {
@@ -370,8 +349,12 @@ async function loadCaseBrief(caseId, minMs = 0) {
     const stamp = document.getElementById("exportStamp");
     if (stamp) stamp.textContent = "";
 
-    // Render the Kozmo Move pipeline bar
+    // Render the Kozmo Move pipeline bar, the activity list and the run panel
+    currentVendorName = brief.vendor?.name || "";
     renderMovePipeline(currentMoveTrace);
+    renderRunLog(currentMoveTrace);
+    rpOpenMoves.clear();
+    renderRunPanel();
     renderBrief(brief);
     showBrief();
   } catch (err) {
@@ -395,17 +378,24 @@ function renderMovePipeline(moveTrace) {
     : KOZMO_MOVES.map(m => ({ move_id: m.id, name: m.name, status: "PENDING" }));
 
   movesToShow.forEach((mt, idx) => {
-    const stepEl = document.createElement("span");
-    stepEl.className = mt.status === "PENDING" ? "pipe-step" : "pipe-step active";
+    const pending = mt.status === "PENDING";
+    const stepEl = document.createElement(pending ? "span" : "button");
+    stepEl.className = pending ? "pipe-step" : "pipe-step active";
 
-    // Count executed vs skipped actions
-    const actions = mt.actions || [];
-    const executed = actions.filter(a => a.status === "EXECUTED").length;
-    const skipped = actions.filter(a => a.status === "SKIPPED").length;
-
-    stepEl.textContent = mt.move_id;
-    stepEl.title = mt.status === "PENDING" ? `${mt.name} — not run yet`
-      : `${mt.name} — ${executed} executed, ${skipped} skipped`;
+    const { total, executed, skipped } = actionCounts(mt);
+    const idEl = document.createElement("span");
+    idEl.textContent = mt.move_id;
+    stepEl.appendChild(idEl);
+    if (!pending) {
+      stepEl.type = "button";
+      const countEl = document.createElement("span");
+      countEl.className = "pipe-count";
+      countEl.textContent = `${executed}/${total}`;
+      stepEl.appendChild(countEl);
+      stepEl.addEventListener("click", () => openRunPanel(idx));
+    }
+    stepEl.title = pending ? `${mt.name} — not run yet`
+      : `${mt.name} — ${executed} of ${total} actions ran${skipped ? `, ${skipped} skipped` : ""}. Click to see them.`;
     container.appendChild(stepEl);
 
     if (idx < movesToShow.length - 1) {
@@ -419,7 +409,10 @@ function renderMovePipeline(moveTrace) {
 
 function renderPipelineRunning() {
   const container = document.getElementById("statePipeline");
-  container.innerHTML = '<span class="pipe-step active">Executing Kozmo Move Pipeline...</span>';
+  container.innerHTML = '<span class="pipe-step running">Running the move pipeline…</span>';
+  const status = document.getElementById("rpStatus");
+  if (status) status.innerHTML = '<span class="rp-status-dot running"></span>Running…';
+  document.getElementById("runLog")?.classList.add("is-running");
 }
 
 /**
@@ -816,141 +809,245 @@ function renderRuleChecks(meta) {
 }
 */
 
-
 // ===================================================================
-// KOZMO MOVE FLOW MODAL — Execution Trace Viewer
+// AGENT RUN — activity list (in the page) + right panel (moves → actions)
 // ===================================================================
 
-/**
- * Open the Move Flow Modal and populate with current trace data
- */
-function openMoveFlowModal() {
-  const modal = document.getElementById("moveFlowModal");
-  const tabsContainer = document.getElementById("moveTabsContainer");
-  const detailContainer = document.getElementById("moveDetailContainer");
+let currentVendorName = "";
+const rpOpenMoves = new Set();   // indexes of moves expanded in the right panel
 
-  if (!currentMoveTrace || currentMoveTrace.length === 0) {
-    detailContainer.innerHTML = `
-      <div class="move-empty-state">
-        <p>No move trace available. Please evaluate a case first using <strong>Re-evaluate</strong>.</p>
-      </div>`;
-    tabsContainer.innerHTML = "";
-    modal.style.display = "flex";
-    return;
-  }
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  // Build tabs
-  tabsContainer.innerHTML = currentMoveTrace.map((mt, idx) => {
-    const actions = mt.actions || [];
-    const executed = actions.filter(a => a.status === "EXECUTED").length;
-    const skipped = actions.filter(a => a.status === "SKIPPED").length;
-    return `
-      <button class="move-tab-btn ${idx === 0 ? 'active' : ''}" data-move-idx="${idx}" onclick="selectMoveTab(${idx})">
-        <span class="tab-move-id">${mt.move_id}</span>
-        <span class="tab-move-stats">${executed}✓ ${skipped > 0 ? skipped + '⊘' : ''}</span>
-      </button>`;
-  }).join("");
+const ICONS = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  skip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12"/></svg>',
+  chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  chevD: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+};
 
-  // Show first move detail
-  renderMoveDetail(0);
-  modal.style.display = "flex";
-}
-
-/**
- * Handle tab click — switch active tab and render detail
- */
-function selectMoveTab(idx) {
-  // Update active tab
-  document.querySelectorAll(".move-tab-btn").forEach(btn => {
-    btn.classList.toggle("active", parseInt(btn.dataset.moveIdx) === idx);
-  });
-  renderMoveDetail(idx);
-}
-
-/**
- * Render the detail card for a specific move
- */
-function renderMoveDetail(index) {
-  const container = document.getElementById("moveDetailContainer");
-  const mt = currentMoveTrace[index];
-
-  if (!mt) {
-    container.innerHTML = '<p>No data for this move.</p>';
-    return;
-  }
-
+/** Counts for one move: actions in the template, how many ran / were skipped / failed, gates passed. */
+function actionCounts(mt) {
   const actions = mt.actions || [];
   const gates = mt.gates || [];
-  const executed = actions.filter(a => a.status === "EXECUTED").length;
-  const skipped = actions.filter(a => a.status === "SKIPPED").length;
+  return {
+    total: actions.length,
+    executed: actions.filter(a => a.status === "EXECUTED").length,
+    skipped: actions.filter(a => a.status === "SKIPPED").length,
+    failed: actions.filter(a => a.status === "FAILED").length,
+    gates: gates.length,
+    gatesPassed: gates.filter(g => g.passed).length,
+  };
+}
 
-  // Header
-  let html = `
-    <div class="move-header-card">
-      <div class="move-header-top">
-        <span class="move-id-badge">${mt.move_id}</span>
-        <h4 class="move-title">${mt.name}</h4>
-        <span class="move-verb-tag">${mt.verb}</span>
-      </div>
-      <p class="move-summary">${mt.summary || '—'}</p>
-      <div class="move-stats-bar">
-        <span class="stat-pill executed">${executed} Executed</span>
-        <span class="stat-pill skipped">${skipped} Skipped</span>
-        <span class="stat-pill gates">${gates.length} Gate${gates.length !== 1 ? 's' : ''}</span>
-      </div>
-    </div>`;
+/** Totals across the whole run. */
+function runTotals(trace) {
+  return trace.reduce((t, mt) => {
+    const c = actionCounts(mt);
+    Object.keys(c).forEach(k => { t[k] = (t[k] || 0) + c[k]; });
+    t.moves += 1;
+    return t;
+  }, { moves: 0, total: 0, executed: 0, skipped: 0, failed: 0, gates: 0, gatesPassed: 0 });
+}
 
-  // Gates Section
-  if (gates.length > 0) {
-    html += `<div class="move-section-label">Gates & Conditions</div>`;
-    html += `<div class="gates-grid">`;
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+function setupRunPanel() {
+  document.getElementById("runPanelBtn")?.addEventListener("click", () => {
+    const shell = document.querySelector(".app-shell");
+    if (shell.classList.contains("rp-open")) closeRunPanel();
+    else openRunPanel();
+  });
+  document.getElementById("rpClose")?.addEventListener("click", closeRunPanel);
+  document.getElementById("rpBackdrop")?.addEventListener("click", closeRunPanel);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.querySelector(".app-shell.rp-open")) closeRunPanel();
+  });
+
+  document.getElementById("runLogHead")?.addEventListener("click", (e) => {
+    const head = e.currentTarget;
+    const open = head.getAttribute("aria-expanded") !== "true";
+    head.setAttribute("aria-expanded", String(open));
+    document.getElementById("runLog").classList.toggle("collapsed", !open);
+  });
+
+  document.getElementById("rpExpandAll")?.addEventListener("click", () => {
+    const allOpen = currentMoveTrace.length > 0 && rpOpenMoves.size === currentMoveTrace.length;
+    rpOpenMoves.clear();
+    if (!allOpen) currentMoveTrace.forEach((_, i) => rpOpenMoves.add(i));
+    renderRunPanel();
+  });
+
+  renderRunPanel();
+}
+
+/** Open the right panel; with an index, expand that move and scroll it into view. */
+function openRunPanel(moveIdx = null) {
+  const shell = document.querySelector(".app-shell");
+  const panel = document.getElementById("runPanel");
+  if (moveIdx !== null) rpOpenMoves.add(moveIdx);
+  renderRunPanel(moveIdx);
+  panel.hidden = false;
+  requestAnimationFrame(() => shell.classList.add("rp-open"));
+  document.getElementById("runPanelBtn")?.setAttribute("aria-expanded", "true");
+  if (moveIdx !== null) {
+    const el = panel.querySelector(`.rp-move[data-idx="${moveIdx}"]`);
+    setTimeout(() => el?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 240);
+  }
+}
+
+function closeRunPanel() {
+  const shell = document.querySelector(".app-shell");
+  shell.classList.remove("rp-open");
+  document.getElementById("runPanelBtn")?.setAttribute("aria-expanded", "false");
+  setTimeout(() => {
+    if (!shell.classList.contains("rp-open")) document.getElementById("runPanel").hidden = true;
+  }, 240);
+}
+
+/**
+ * Activity list between the controls and the brief — one row per move, like a tool-call log.
+ */
+function renderRunLog(trace) {
+  const box = document.getElementById("runLog");
+  const list = document.getElementById("runLogList");
+  if (!box || !list) return;
+  box.classList.remove("is-running");
+  if (!trace.length) { box.hidden = true; return; }
+
+  const t = runTotals(trace);
+  document.getElementById("runLogSummary").innerHTML =
+    `Agent ran <strong>${plural(t.moves, "move")}</strong> · <strong>${t.executed}</strong> of ${plural(t.total, "action")}` +
+    (t.skipped ? ` · ${t.skipped} skipped` : "") +
+    (t.failed ? ` · <span class="rl-bad">${t.failed} failed</span>` : "");
+
+  list.innerHTML = trace.map((mt, idx) => {
+    const c = actionCounts(mt);
+    const state = c.failed ? "fail" : "ok";
+    return `
+      <button type="button" class="rl-row" data-idx="${idx}" title="Open ${esc(mt.move_id)} in the run panel">
+        <span class="rl-icon ${state}">${state === "fail" ? ICONS.cross : ICONS.check}</span>
+        <span class="rl-verb">Ran move</span>
+        <span class="rl-name"><span class="rl-id">${esc(mt.move_id)}</span>${esc(mt.name)}</span>
+        <span class="rl-meta">${c.executed}/${c.total} actions${c.skipped ? ` · ${c.skipped} skipped` : ""}${c.gates ? ` · ${c.gatesPassed}/${c.gates} gates` : ""}</span>
+        <span class="rl-go">${ICONS.chevR}</span>
+      </button>`;
+  }).join("");
+  list.querySelectorAll(".rl-row").forEach(row =>
+    row.addEventListener("click", () => openRunPanel(Number(row.dataset.idx))));
+  box.hidden = false;
+}
+
+/**
+ * Right panel: run stats + a vertical timeline of moves. Each move expands to show its gates and actions.
+ */
+function renderRunPanel(focusIdx = null) {
+  const statsEl = document.getElementById("rpStats");
+  const timeline = document.getElementById("rpTimeline");
+  const status = document.getElementById("rpStatus");
+  const btnText = document.getElementById("runPanelBtnText");
+  const expandAll = document.getElementById("rpExpandAll");
+  if (!timeline) return;
+
+  const trace = currentMoveTrace || [];
+
+  if (!trace.length) {
+    status.innerHTML = '<span class="rp-status-dot"></span>Not run yet';
+    statsEl.innerHTML = `
+      <div class="rp-stat"><span class="rp-stat-num">${KOZMO_MOVES.length}</span><span class="rp-stat-lbl">Moves in template</span></div>
+      <div class="rp-stat"><span class="rp-stat-num">—</span><span class="rp-stat-lbl">Actions run</span></div>`;
+    timeline.innerHTML = KOZMO_MOVES.map(m => `
+      <li class="rp-move pending">
+        <div class="rp-move-btn" aria-disabled="true">
+          <span class="rp-dot"></span>
+          <span class="rp-move-main"><span class="rp-move-name">${esc(m.name)}</span><span class="rp-move-meta">Not run yet — generate a brief</span></span>
+        </div>
+      </li>`).join("");
+    if (btnText) btnText.textContent = "Agent run";
+    expandAll.hidden = true;
+    return;
+  }
+
+  const t = runTotals(trace);
+  status.innerHTML = `<span class="rp-status-dot ${t.failed ? "bad" : "ok"}"></span>${t.failed ? "Finished with errors" : "Report ready"}${currentVendorName ? ` · ${esc(currentVendorName)}` : ""}`;
+  if (btnText) btnText.innerHTML = `Agent run <span class="rp-toggle-count">${t.moves} moves · ${t.total} actions</span>`;
+  expandAll.hidden = false;
+  expandAll.textContent = rpOpenMoves.size === trace.length ? "Collapse all" : "Expand all";
+
+  statsEl.innerHTML = `
+    <div class="rp-stat"><span class="rp-stat-num">${t.moves}</span><span class="rp-stat-lbl">Moves run</span></div>
+    <div class="rp-stat"><span class="rp-stat-num">${t.executed}<small>/${t.total}</small></span><span class="rp-stat-lbl">Actions run</span></div>
+    <div class="rp-stat"><span class="rp-stat-num">${t.skipped}</span><span class="rp-stat-lbl">Skipped</span></div>
+    <div class="rp-stat"><span class="rp-stat-num">${t.gatesPassed}<small>/${t.gates}</small></span><span class="rp-stat-lbl">Gates passed</span></div>`;
+
+  timeline.innerHTML = trace.map((mt, idx) => {
+    const c = actionCounts(mt);
+    const open = rpOpenMoves.has(idx);
+    const state = c.failed ? "fail" : "done";
+    return `
+      <li class="rp-move ${state}${open ? " open" : ""}${focusIdx === idx ? " focus" : ""}" data-idx="${idx}">
+        <button type="button" class="rp-move-btn" aria-expanded="${open}">
+          <span class="rp-dot">${state === "fail" ? ICONS.cross : ICONS.check}</span>
+          <span class="rp-move-main">
+            <span class="rp-move-name"><span class="rp-move-id">${esc(mt.move_id)}</span>${esc(mt.name)}</span>
+            <span class="rp-move-meta">${c.executed} of ${plural(c.total, "action")} ran${c.skipped ? ` · ${c.skipped} skipped` : ""}${c.gates ? ` · ${c.gatesPassed}/${c.gates} gates` : ""}</span>
+          </span>
+          <span class="rp-chev">${ICONS.chevD}</span>
+        </button>
+        <div class="rp-move-body">${open ? renderMoveBody(mt) : ""}</div>
+      </li>`;
+  }).join("");
+
+  timeline.querySelectorAll(".rp-move-btn").forEach(btn => btn.addEventListener("click", () => {
+    const idx = Number(btn.closest(".rp-move").dataset.idx);
+    if (rpOpenMoves.has(idx)) rpOpenMoves.delete(idx); else rpOpenMoves.add(idx);
+    renderRunPanel();
+  }));
+}
+
+/** Expanded move: summary, gates, then each action with what it produced or why it was skipped. */
+function renderMoveBody(mt) {
+  const actions = mt.actions || [];
+  const gates = mt.gates || [];
+  let html = "";
+  if (mt.summary) html += `<p class="rp-summary">${esc(mt.summary)}</p>`;
+
+  if (gates.length) {
+    html += `<div class="rp-sub-label">Gates</div><ul class="rp-items">`;
     gates.forEach(g => {
-      const passClass = g.passed ? "gate-passed" : "gate-failed";
-      const passIcon = g.passed ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
       html += `
-        <div class="gate-card ${passClass}">
-          <div class="gate-header">
-            <span class="gate-id">${g.id}</span>
-            <span class="gate-icon ${g.passed ? 'pass' : 'fail'}" title="${g.passed ? 'Passed' : 'Failed'}">${passIcon}</span>
+        <li class="rp-item ${g.passed ? "ran" : "fail"}">
+          <span class="rp-item-icon">${g.passed ? ICONS.check : ICONS.cross}</span>
+          <div class="rp-item-main">
+            <div class="rp-item-name">${esc(g.name)} <span class="rp-item-id">${esc(g.id)}</span></div>
+            <div class="rp-item-out">${esc(g.decision)}</div>
+            ${g.details ? `<div class="rp-item-note">${esc(g.details)}</div>` : ""}
           </div>
-          <div class="gate-name">${g.name}</div>
-          <div class="gate-decision">${g.decision}</div>
-          ${g.details ? `<div class="gate-details">${g.details}</div>` : ''}
-        </div>`;
+        </li>`;
     });
-    html += `</div>`;
+    html += `</ul>`;
   }
 
-  // Actions Section
-  if (actions.length > 0) {
-    html += `<div class="move-section-label">Actions</div>`;
-    html += `<div class="actions-list">`;
+  if (actions.length) {
+    html += `<div class="rp-sub-label">Actions</div><ul class="rp-items">`;
     actions.forEach(a => {
-      const isExecuted = a.status === "EXECUTED";
-      const statusClass = isExecuted ? "executed" : "skipped";
-      const statusIcon = `<span class="status-dot ${statusClass}" title="${isExecuted ? "Executed" : "Skipped"}"></span>`;
-      const durationStr = isExecuted && a.duration_ms ? `${a.duration_ms.toFixed(1)}ms` : "";
-
+      const cls = a.status === "EXECUTED" ? "ran" : a.status === "FAILED" ? "fail" : "skipped";
+      const icon = cls === "ran" ? ICONS.check : cls === "fail" ? ICONS.cross : ICONS.skip;
+      const dur = cls === "ran" && a.duration_ms ? `<span class="rp-item-dur">${a.duration_ms >= 0.1 ? Number(a.duration_ms).toFixed(1) : "<0.1"} ms</span>` : "";
+      const out = cls === "skipped"
+        ? `<div class="rp-item-note">Skipped${a.skip_reason ? `: ${esc(a.skip_reason)}` : ""}</div>`
+        : (a.output_summary ? `<div class="rp-item-out">${esc(a.output_summary)}</div>` : "");
       html += `
-        <div class="action-row ${statusClass}">
-          <div class="action-status-icon">${statusIcon}</div>
-          <div class="action-info">
-            <div class="action-id-name">
-              <span class="action-id">${a.id}</span>
-              <span class="action-name">${a.name}</span>
-            </div>
-            ${isExecuted && a.output_summary
-              ? `<div class="action-output">${a.output_summary}</div>`
-              : ''}
-            ${!isExecuted && a.skip_reason
-              ? `<div class="action-skip-reason"><em>Skipped: ${a.skip_reason}</em></div>`
-              : ''}
+        <li class="rp-item ${cls}">
+          <span class="rp-item-icon">${icon}</span>
+          <div class="rp-item-main">
+            <div class="rp-item-name">${esc(a.name)} <span class="rp-item-id">${esc(a.id)}</span>${dur}</div>
+            ${out}
           </div>
-          ${durationStr ? `<div class="action-duration">${durationStr}</div>` : ''}
-        </div>`;
+        </li>`;
     });
-    html += `</div>`;
+    html += `</ul>`;
   }
-
-  container.innerHTML = html;
+  return html || '<p class="rp-summary">No actions recorded for this move.</p>';
 }
