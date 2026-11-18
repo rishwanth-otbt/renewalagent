@@ -251,7 +251,9 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             "StrategicDecisionRoutingGate",
             passed=True,
             decision=routing_decision,
-            details=f"Increase: +{dossier.increase_pct}%, Rating: {dossier.performance_rating}, Budget Gap: {_fmt_usd(dossier.budget_gap_usd)}, Cap breach: {dossier.cap_breach}"
+            details=(f"Increase: +{dossier.increase_pct}% (renew ≤ {rn.max_increase_pct:g}%, switch ≥ {sw.price_shock_pct:g}%), "
+                     f"Rating: {dossier.performance_rating} (renew needs {rn.min_performance_rating}), "
+                     f"Budget Gap: {_fmt_usd(dossier.budget_gap_usd)}, Cap breach: {dossier.cap_breach}")
         )
 
         # ----------------------------------------------------
@@ -277,10 +279,12 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             "SwitchingCostGate",
             passed=True,
             decision=g2_decision,
-            details=f"Replacement difficulty: {replacement_difficulty}, migration estimate: {migration_months} months, rating: {dossier.performance_rating}"
+            details=(f"Replacement difficulty: {replacement_difficulty} (hard: {', '.join(sw.hard_to_replace_levels)}), "
+                     f"migration estimate: {migration_months} months (hard from {sw.long_migration_months}), rating: {dossier.performance_rating}")
         )
 
         drivers_text = "; ".join(drivers)
+        target_util = pol.licenses.target_utilization_pct
         notice_obj = self._notice_objective(dossier)
 
         # ----------------------------------------------------
@@ -289,19 +293,29 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         if routing_decision == "ROUTE_RENEW":
             def action_a4():
                 dossier.primary_decision = "Renew"
-                headroom = -dossier.budget_gap_usd
+                if dossier.approved_budget_acv <= 0:
+                    budget_text = "no approved budget is on file"
+                elif dossier.budget_gap_usd > 0:
+                    budget_text = f"is {_fmt_usd(dossier.budget_gap_usd)} over budget (allowed by policy)"
+                else:
+                    budget_text = f"leaves {_fmt_usd(-dossier.budget_gap_usd)} of budget headroom"
                 dossier.decision_rationale = (
-                    f"Performance rated Good: {dossier.actual_uptime}% uptime vs {dossier.contracted_uptime}% contracted, "
+                    f"Performance rated {dossier.performance_rating} (policy minimum: {rn.min_performance_rating}): "
+                    f"{dossier.actual_uptime}% uptime vs {dossier.contracted_uptime}% contracted, "
                     f"{dossier.support_sla_achievement}% support SLA and {dossier.critical_incidents_count} critical incidents. "
-                    f"The +{dossier.increase_pct}% increase is in line with history ({dossier.historical_avg_increase_pct}% average) "
-                    f"and leaves {_fmt_usd(headroom)} of budget headroom, with {dossier.utilization_pct}% of seats in active use."
+                    f"The +{dossier.increase_pct}% increase is within the {rn.max_increase_pct:g}% renew limit "
+                    f"(historical average {dossier.historical_avg_increase_pct}%) "
+                    f"and {budget_text}, with {dossier.utilization_pct}% of seats in active use."
                 )
                 if dossier.price_cap_pct is not None:
                     dossier.decision_rationale += f" The increase is within the contractual {dossier.price_cap_pct:g}% cap."
                 dossier.strategic_options = [
                     {"option": "Renew as-is", "assessment": "Preferred (commercially fair and operationally stable)"},
                     {"option": "Renegotiate", "assessment": "Optional (explore minor volume rebate or multi-year prepay discount)"},
-                    {"option": "Restructure licenses", "assessment": f"Not required ({dossier.utilization_pct}% adoption is above the 90% threshold)"},
+                    {"option": "Restructure licenses",
+                     "assessment": (f"Optional ({dossier.utilization_pct}% adoption is below the {target_util:g}% target; "
+                                    f"right-size to {dossier.recommended_seats:,} seats)" if dossier.has_shelfware
+                                    else f"Not required ({dossier.utilization_pct}% adoption meets the {target_util:g}% target)")},
                     {"option": "Benchmark alternatives", "assessment": f"Low priority (replacement difficulty {replacement_difficulty}, ~{migration_months}-month migration)"},
                     {"option": "Switch vendor", "assessment": "Not recommended (high disruption risk for a well-performing vendor)"}
                 ]
@@ -321,7 +335,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                 return "Configured RENEW strategic package"
             self.execute_action("A4", "BuildRenewStrategyPackage", action_a4)
         else:
-            self.skip_action("A4", "BuildRenewStrategyPackage", f"Commercial terms or SLA metrics do not meet clean RENEW threshold (routed {routing_decision}).")
+            self.skip_action("A4", "BuildRenewStrategyPackage", f"Proposal does not meet the policy's Renew rules (routed {routing_decision}).")
 
         # ----------------------------------------------------
         # Action A5: Build "Renegotiate" Strategic Package
@@ -343,7 +357,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                     {"option": "Renegotiate", "assessment": f"Preferred (counter-target {_fmt_usd(dossier.negotiation_target_acv)} ACV)"},
                     {"option": "Restructure licenses",
                      "assessment": (f"Recommended (right-size from {dossier.total_provisioned_seats:,} to {dossier.recommended_seats:,} seats)"
-                                    if dossier.has_shelfware else f"Not required ({dossier.utilization_pct}% adoption)")},
+                                    if dossier.has_shelfware else f"Not required ({dossier.utilization_pct}% adoption meets the {target_util:g}% target)")},
                     {"option": "Benchmark alternatives", "assessment": "Recommended (parallel evaluation to maintain negotiation leverage)"},
                     {"option": "Switch vendor immediately",
                      "assessment": (f"Not justified (replacement difficulty {replacement_difficulty}, ~{migration_months}-month migration)"
