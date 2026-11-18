@@ -106,3 +106,28 @@ sample_uploads/       test cases, named by expected result
 | Frontend | Plain HTML, CSS, JavaScript (no framework, no build step), served by FastAPI |
 | Config | `python-dotenv` (`backend/.env`, `DATABASE_URL`) |
 | Tests | pytest, httpx (FastAPI TestClient) |
+
+## 12. How to run
+
+All commands run from `backend/`.
+
+1. **Install packages** (once):
+   ```
+   pip install -r requirements.txt
+   ```
+2. **Set up the database** (once): SQL Server LocalDB must be installed. Create the tables and load the sample cases:
+   ```
+   sqlcmd -S "(localdb)\MSSQLLocalDB" -E -i migration\001_create_tables.sql
+   python migration/import_json_cases.py
+   ```
+   A different server goes in `backend/.env` (copy `.env.example`). Details: `backend/migration/README.md`.
+3. **Start the server:**
+   ```
+   python main.py
+   ```
+   or `uvicorn main:app --reload --port 8000`.
+4. **Open** http://localhost:8000, pick a renewal case and an assessment date, and click **Generate brief**.
+5. **Run the tests:**
+   ```
+   python -m pytest -q
+   ```
