@@ -1,0 +1,158 @@
+{
+  "case_id": "TEST-14-INVALID-MISSING",
+  "vendor": {
+    "name": "Broken Upload Co",
+    "service_type": "Validation Test - Missing Fields",
+    "account_manager": "Jordan Ellis",
+    "account_manager_email": "jordan.ellis@vendor.example.com",
+    "vendor_tier": "Tier 2 Important"
+  },
+  "msa": {
+    "contract_id": "MSA-ERR-2023-1414",
+    "signed_date": "2023-06-01",
+    "current_term_start": "2024-10-01",
+    "auto_renewal": true,
+    "governing_law": "New York, USA",
+    "payment_terms_days": 30,
+    "termination_for_convenience": true,
+    "price_increase_cap_pct": 6.0
+  },
+  "current_pricing": {
+    "annual_contract_value": 250000,
+    "total_seats": 1000,
+    "unit_price_per_seat": 250,
+    "billing_frequency": "annual",
+    "modules_included": [
+      "Core Platform",
+      "Standard Support"
+    ],
+    "currency": "USD"
+  },
+  "vendor_proposal": {
+    "received_date": "2026-11-01",
+    "proposed_annual_value": 260000,
+    "proposed_seats": 1000,
+    "proposed_unit_price": 260,
+    "proposed_term_months": 36,
+    "proposed_modules": [
+      "Core Platform",
+      "Standard Support"
+    ],
+    "price_increase_justification": "Annual CPI-linked adjustment",
+    "proposal_expiry_date": "2027-01-31"
+  },
+  "sla": {
+    "contracted_uptime_pct": 99.9,
+    "contracted_support_response_hours": 2,
+    "contracted_resolution_hours": 12,
+    "actual_support_sla_achievement_pct": 96.0,
+    "critical_incidents_count": 0,
+    "critical_incidents_detail": [],
+    "service_credits_claimed_usd": 0,
+    "service_credits_available_usd": 0
+  },
+  "addendum": [
+    {
+      "addendum_id": "ADD-01",
+      "signed_date": "2024-10-01",
+      "description": "Data processing agreement (GDPR / SOC 2 obligations)",
+      "expiry": null,
+      "status": "active"
+    }
+  ],
+  "usage": {
+    "total_provisioned_seats": 1000,
+    "active_seats_last_90_days": 950,
+    "inactive_seats": 50,
+    "departments": [
+      {
+        "name": "Engineering",
+        "provisioned": 400,
+        "active": 385
+      },
+      {
+        "name": "Sales & Marketing",
+        "provisioned": 350,
+        "active": 330
+      },
+      {
+        "name": "Corporate & Ops",
+        "provisioned": 250,
+        "active": 235
+      }
+    ],
+    "feature_adoption": {
+      "core_platform_pct": 95,
+      "standard_support_pct": 80
+    }
+  },
+  "roadmap": {
+    "promised_milestones": [
+      {
+        "feature": "SSO / SCIM Provisioning",
+        "promised_date": "2025-03-01",
+        "delivered": true,
+        "actual_date": "2025-02-20"
+      },
+      {
+        "feature": "Audit Log Export API",
+        "promised_date": "2025-10-01",
+        "delivered": true,
+        "actual_date": "2025-09-28"
+      },
+      {
+        "feature": "EU Data Residency",
+        "promised_date": "2026-06-01",
+        "delivered": true,
+        "actual_date": "2026-05-15"
+      }
+    ]
+  },
+  "emails": [
+    {
+      "date": "2026-11-01",
+      "from": "jordan.ellis@vendor.example.com",
+      "subject": "Renewal proposal",
+      "summary": "Vendor sent renewal proposal for the next term."
+    },
+    {
+      "date": "2026-11-10",
+      "from": "it.owner@acme.com",
+      "subject": "RE: Renewal proposal",
+      "summary": "Business owner confirmed the platform is still required."
+    }
+  ],
+  "renewal_history": [
+    {
+      "renewal_cycle": "2021-2022",
+      "original_acv": 225000,
+      "renewed_acv": 235000,
+      "increase_pct": 4.4,
+      "seats": 950,
+      "term_months": 12,
+      "outcome": "Standard renewal",
+      "negotiated_savings_usd": 5000
+    },
+    {
+      "renewal_cycle": "2022-2024",
+      "original_acv": 235000,
+      "renewed_acv": 245000,
+      "increase_pct": 4.3,
+      "seats": 1000,
+      "term_months": 24,
+      "outcome": "Renewed with seat true-up",
+      "negotiated_savings_usd": 8000
+    }
+  ],
+  "internal_assessment": {
+    "strategic_importance": "High",
+    "replacement_difficulty": "Medium",
+    "known_alternatives": [
+      "Alternative Vendor A",
+      "Alternative Vendor B"
+    ],
+    "migration_estimate_months": 6,
+    "internal_champion": "IT Director",
+    "budget_owner": "CIO"
+  }
+}
