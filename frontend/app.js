@@ -314,13 +314,10 @@ function showBrief() {
 }
 
 /**
- * Case or date changed: highlight "Generate brief" until the user clicks it.
+ * Case or date changed: clear the "pick a case" hint on the selector.
  */
 function markInputsChanged() {
-  const caseSelect = document.getElementById("caseSelect");
-  const reloadBtn = document.getElementById("reloadBtn");
-  caseSelect.classList.remove("needs-choice");
-  reloadBtn.classList.toggle("needs-generate", !!caseSelect.value);
+  document.getElementById("caseSelect").classList.remove("needs-choice");
 }
 
 const MIN_LOADING_MS = 1000;
@@ -330,7 +327,6 @@ const MIN_LOADING_MS = 1000;
  */
 async function generateBrief(caseId) {
   const reloadBtn = document.getElementById("reloadBtn");
-  reloadBtn.classList.remove("needs-generate");
   reloadBtn.classList.add("is-generating");
   reloadBtn.disabled = true;
   try {

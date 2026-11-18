@@ -127,17 +127,6 @@ button.btn-dark {
 }
 button.btn-dark:hover { background: #1f363d; border-color: #1f363d; }
 
-/* Generate brief: inputs changed, not generated yet */
-button.btn-dark.needs-generate {
-  background: var(--brand);
-  border-color: var(--brand);
-  animation: generate-pulse 1.4s ease-in-out infinite;
-}
-@keyframes generate-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.45); }
-  50%      { box-shadow: 0 0 0 6px rgba(15, 118, 110, 0); }
-}
-
 /* Generate brief: running — swap the sparkle icon for a spinner */
 button.btn-dark.is-generating,
 button.btn-dark.is-generating:disabled { opacity: 1; cursor: progress; }
@@ -151,9 +140,6 @@ button.btn-dark.is-generating::before {
   animation: generate-spin 0.7s linear infinite;
 }
 @keyframes generate-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  button.btn-dark.needs-generate { animation: none; box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.3); }
-}
 
 /* ==========================================================================
    App Shell — Sidebar
