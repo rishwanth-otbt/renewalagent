@@ -81,10 +81,11 @@ class MoveM01SetRenewalGoals(BaseMove):
                 "statement": f"Service availability meets or exceeds contractual uptime threshold (>= {contracted_uptime}%)",
                 "target": f">= {contracted_uptime}% Uptime"
             })
+            lic = dossier.policy.licenses
             criteria.append({
                 "priority": "SHOULD",
-                "statement": "Active license volume aligns with demonstrated 90-day organizational utilization",
-                "target": ">= 90% seat utilization"
+                "statement": f"Active license volume aligns with demonstrated {lic.activity_window_days}-day organizational utilization",
+                "target": f">= {lic.target_utilization_pct:g}% seat utilization"
             })
             dossier.success_criteria = criteria
             must = sum(1 for c in criteria if c["priority"] == "MUST")
