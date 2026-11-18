@@ -615,6 +615,118 @@
     "n_success_criteria": 3,
     "timeline_phases": 6
   },
+  "sample_uploads/17_expect_renegotiate_6pct_default_policy_renew_with_7pct_policy": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium",
+    "risk_items": [
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 6.0,
+    "budget_gap_usd": -10000.0,
+    "negotiation_target_acv": 275000.0,
+    "three_year_target": 825000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 3,
+    "n_drivers": 1,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/18_expect_renegotiate_switch_downgraded_hard_to_replace_acceptable_performance": {
+    "decision": "Renegotiate",
+    "switch_downgraded": true,
+    "risk_level": "High",
+    "risk_items": [
+      [
+        "Severe price escalation (+32.0%)",
+        "High"
+      ],
+      [
+        "Proposal breaches contractual 6% price-increase cap",
+        "High"
+      ],
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 32.0,
+    "budget_gap_usd": -10000.0,
+    "negotiation_target_acv": 265000.0,
+    "three_year_target": 795000.0,
+    "cap_breach": true,
+    "performance_rating": "Acceptable",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 5,
+    "n_drivers": 3,
+    "n_success_criteria": 3,
+    "timeline_phases": 6
+  },
+  "sample_uploads/19_expect_renew_supported_seat_expansion_high_utilization": {
+    "decision": "Renew",
+    "switch_downgraded": false,
+    "risk_level": "Low",
+    "risk_items": [
+      [
+        "Standard operational dependency",
+        "Low"
+      ]
+    ],
+    "increase_pct": 4.0,
+    "budget_gap_usd": -15000.0,
+    "negotiation_target_acv": 260000.0,
+    "three_year_target": 780000.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "EXPANSION",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 4,
+    "n_drivers": 0,
+    "n_success_criteria": 3,
+    "timeline_phases": 3
+  },
+  "sample_uploads/20_expect_renegotiate_no_approved_budget_target_current_plus_3pct": {
+    "decision": "Renegotiate",
+    "switch_downgraded": false,
+    "risk_level": "Medium",
+    "risk_items": [
+      [
+        "36-month term lock-in",
+        "Medium"
+      ]
+    ],
+    "increase_pct": 8.0,
+    "budget_gap_usd": 0.0,
+    "negotiation_target_acv": 257500.0,
+    "three_year_target": 772500.0,
+    "cap_breach": false,
+    "performance_rating": "Good",
+    "utilization_pct": 95.0,
+    "recommended_seats": 1000,
+    "reduction_opportunity": 0,
+    "renewal_type": "FLAT",
+    "notice_status": "ADEQUATE_RUNWAY",
+    "n_objectives": 3,
+    "n_drivers": 1,
+    "n_success_criteria": 2,
+    "timeline_phases": 6
+  },
   "sample_uploads/demo_dataguard_price_shock_35pct": {
     "decision": "Renegotiate",
     "switch_downgraded": true,

@@ -1,7 +1,8 @@
 # Sample uploads — test scenarios
 
 Upload these through the **📁 Upload** button. Each file name says what it tests and the expected result.
-All vendors are fictional. Results below were checked with an assessment date of **2026-11-18**.
+All vendors are fictional. Results below were checked with an assessment date of **2026-11-18** and the
+**default policy**. Changing the policy (⚙️ Policy) changes results on purpose; the brief's rule-check strip shows why.
 
 | File | What it tests | Expected result |
 |---|---|---|
@@ -21,6 +22,10 @@ All vendors are fictional. Results below were checked with an assessment date of
 | `14_expect_rejected_422_missing_required_fields` | Required fields removed | Upload **rejected (422)** listing 4 missing fields |
 | `15_expect_rejected_422_wrong_types_and_invalid_values` | `"yes"` for boolean, `"1000"` for int, uptime 120%, bad addendum status | Upload **rejected (422)** |
 | `16_expect_rejected_422_term_end_before_term_start` | Term end earlier than term start | Upload **rejected (422)** |
+| `17_expect_renegotiate_6pct_default_policy_renew_with_7pct_policy` | +6%, otherwise clean. Policy demo: set **Renew at ≤ 7%** on the Policy page | **Renegotiate** (default policy) → **Renew** (7% policy) |
+| `18_expect_renegotiate_switch_downgraded_hard_to_replace_acceptable_performance` | +32% price shock, High replacement difficulty, Acceptable performance | **Renegotiate**, switch downgraded |
+| `19_expect_renew_supported_seat_expansion_high_utilization` | +40 seats at the same unit price, 95% utilization | **Renew**, `EXPANSION` |
+| `20_expect_renegotiate_no_approved_budget_target_current_plus_3pct` | No approved budget (0), +8%, no price cap | **Renegotiate**, target = current ACV + 3% ($257,500) |
 
 Older files (`demo_*`, `securenet_edr_renewal.json`) are SecureNet/DataGuard demo variants; `demo_dataguard_price_shock_35pct`
 covers the “switch downgraded to renegotiate because vendor is hard to replace” case.
