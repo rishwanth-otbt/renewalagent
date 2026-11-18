@@ -16,6 +16,7 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
 
     def run(self, dossier: Any) -> MoveTrace:
         raw = dossier.raw_data
+        lic = dossier.policy.licenses
         usage = raw["usage"]
         pricing = raw["current_pricing"]
 
@@ -43,7 +44,7 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
         # ----------------------------------------------------
         # Gate G1: Shelfware Detection Check
         # ----------------------------------------------------
-        has_shelfware = dossier.utilization_pct < 90.0
+        has_shelfware = dossier.utilization_pct < lic.target_utilization_pct
         dossier.has_shelfware = has_shelfware
         
         self.record_gate(
@@ -51,7 +52,7 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
             "ShelfwareDetectionGate",
             passed=True,
             decision="SHELFWARE_DETECTED" if has_shelfware else "OPTIMAL_UTILIZATION",
-            details=f"Utilization is {dossier.utilization_pct}% (Threshold: 90.0%)."
+            details=f"Utilization is {dossier.utilization_pct}% (Threshold: {lic.target_utilization_pct:g}%)."
         )
 
         # ----------------------------------------------------
@@ -60,14 +61,15 @@ class MoveM05AnalyzeLicenseNeeds(BaseMove):
         if has_shelfware:
             def action_a3():
                 unit_price = dossier.proposed_unit_price
-                # Modeled buffer of 9% above active seats
-                dossier.recommended_seats = min(dossier.total_provisioned_seats, int(round(dossier.active_seats * 1.09)))
+                # Right-sizing buffer above active seats (policy.licenses.seat_buffer_pct)
+                factor = 1 + lic.seat_buffer_pct / 100
+                dossier.recommended_seats = min(dossier.total_provisioned_seats, int(round(dossier.active_seats * factor)))
                 dossier.reduction_opportunity = max(0, dossier.total_provisioned_seats - dossier.recommended_seats)
                 dossier.annualized_waste_usd = round(dossier.reduction_opportunity * unit_price, 2)
                 return f"{dossier.reduction_opportunity:,} inactive seats represent ${dossier.annualized_waste_usd:,.0f} in annual exposure"
             self.execute_action("A3", "QuantifyShelfwareExposure", action_a3)
         else:
-            self.skip_action("A3", "QuantifyShelfwareExposure", "Active utilization is >= 90%; no material shelfware detected.")
+            self.skip_action("A3", "QuantifyShelfwareExposure", f"Active utilization is >= {lic.target_utilization_pct:g}%; no material shelfware detected.")
 
         # ----------------------------------------------------
         # Action A4: Model Optimized Seat Baseline
