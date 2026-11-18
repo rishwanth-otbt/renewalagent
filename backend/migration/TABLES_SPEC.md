@@ -22,7 +22,7 @@ Contracts (1) ──< EvaluationResults (many) ──< PdfExports (many)
 | `EvaluationResults` | click on **Generate brief** | `POST /api/process` |
 | `PdfExports` | click on **Export PDF** | `POST /api/exports` |
 
-Contract data lives only in the database. The JSON files in `backend/data/` are test fixtures
+Contract data lives only in the database. The JSON files in `backend/tests/fixtures/` are test fixtures
 for the golden tests; the app never reads or writes them.
 
 ---
@@ -38,7 +38,7 @@ Each uploaded contract JSON, plus the file name the user sees in the case list.
 | `OriginalFileName` | `NVARCHAR(260)` | Yes | | File name exactly as the browser sent it. |
 | `VendorName` | `NVARCHAR(200)` | Yes | | Copied from `vendor.name` in the JSON, for easy querying. |
 | `ContractJson` | `NVARCHAR(MAX)` | No | | Full contract JSON (validated against `RenewalInputData` before saving). |
-| `UploadedBy` | `NVARCHAR(100)` | Yes | | Name saved in the browser, if the user has given one; `import from backend/data` for imported rows. |
+| `UploadedBy` | `NVARCHAR(100)` | Yes | | Name saved in the browser, if the user has given one; `import from backend/tests/fixtures` for imported rows (older imports say `import from backend/data`). |
 | `UploadedAt` | `DATETIME2(0)` | No | `SYSDATETIME()` | When the contract was saved. |
 
 **Constraints**

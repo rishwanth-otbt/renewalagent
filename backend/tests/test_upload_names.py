@@ -8,7 +8,7 @@ import main
 from app.db import repository as repo
 from app.db.database import session_scope
 
-SAMPLE = Path(__file__).resolve().parents[1] / "data" / "renewal_input_001.json"
+SAMPLE = Path(__file__).resolve().parents[0] / "fixtures" / "renewal_input_001.json"
 
 
 def _client():

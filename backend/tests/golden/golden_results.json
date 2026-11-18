@@ -1,5 +1,5 @@
 {
-  "data/renewal_input_001": {
+  "fixtures/renewal_input_001": {
     "decision": "Renegotiate",
     "switch_downgraded": false,
     "risk_level": "High",
@@ -53,7 +53,7 @@
     "n_success_criteria": 3,
     "timeline_phases": 7
   },
-  "data/renewal_input_002": {
+  "fixtures/renewal_input_002": {
     "decision": "Renew",
     "switch_downgraded": false,
     "risk_level": "Low",
@@ -79,7 +79,7 @@
     "n_success_criteria": 3,
     "timeline_phases": 3
   },
-  "data/renewal_input_003": {
+  "fixtures/renewal_input_003": {
     "decision": "Switch / Benchmark",
     "switch_downgraded": false,
     "risk_level": "High",
@@ -133,7 +133,7 @@
     "n_success_criteria": 3,
     "timeline_phases": 6
   },
-  "data/renewal_input_004": {
+  "fixtures/renewal_input_004": {
     "decision": "Renegotiate",
     "switch_downgraded": false,
     "risk_level": "High",
@@ -175,7 +175,7 @@
     "n_success_criteria": 3,
     "timeline_phases": 7
   },
-  "data/renewal_input_005": {
+  "fixtures/renewal_input_005": {
     "decision": "Switch / Benchmark",
     "switch_downgraded": false,
     "risk_level": "High",

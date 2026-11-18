@@ -82,7 +82,7 @@ backend/app/core/     framework: base move, dossier, orchestrator
 backend/app/models/   input schema, renewal policy
 backend/app/moves/    one file per move
 backend/app/db/       SQL Server storage: connection, ORM models, queries
-backend/data/         case fixtures for tests (import into the database with migration/import_json_cases.py)
+backend/tests/fixtures/ case fixtures for tests (import into the database with migration/import_json_cases.py)
 backend/migration/    SQL scripts that create the renewaldesk database + import script
 backend/policies/     saved policy versions (runtime data, git-ignored)
 backend/tests/        golden, boundary, policy and API tests (pytest)

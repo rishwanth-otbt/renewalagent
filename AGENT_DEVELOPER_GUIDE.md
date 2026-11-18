@@ -27,7 +27,7 @@ RenewalAgent/
 │   │       ├── m04_performance.py # Evaluate: SLA availability, outage forensics, credits
 │   │       ├── m05_licenses.py    # Analyze: Seat adoption, shelfware remediation
 │   │       └── m10_recommend.py   # Model: Financial modeling, risk synthesis, strategic routing
-│   ├── data/
+│   ├── tests/fixtures/
 │   │   ├── renewal_input_001.json # Scenario 1: Renegotiate (High risk, shelfware, outages)
 │   │   ├── renewal_input_002.json # Scenario 2: Renew (Low risk, healthy adoption)
 │   │   └── renewal_input_003.json # Scenario 3: Switch / Benchmark (Severe SLA breach)
@@ -141,7 +141,7 @@ Add `{ id: "M06", name: "M06 Benchmark" }` to `KOZMO_MOVES`. The UI modal automa
 
 ### Run CLI Verification Across All 3 Scenarios
 ```powershell
-python -c "import sys; sys.path.insert(0, '.'); from backend.app.core.orchestrator import RenewalAgentOrchestrator; import json; orch = RenewalAgentOrchestrator(); [print(c, orch.run_play(json.load(open('backend/data/'+c)))['brief']['meta']['decision']) for c in ['renewal_input_001.json','renewal_input_002.json','renewal_input_003.json']]"
+python -c "import sys; sys.path.insert(0, '.'); from backend.app.core.orchestrator import RenewalAgentOrchestrator; import json; orch = RenewalAgentOrchestrator(); [print(c, orch.run_play(json.load(open('backend/tests/fixtures/'+c)))['brief']['meta']['decision']) for c in ['renewal_input_001.json','renewal_input_002.json','renewal_input_003.json']]"
 ```
 **Expected Output:**
 - `renewal_input_001.json` ➔ `Renegotiate`

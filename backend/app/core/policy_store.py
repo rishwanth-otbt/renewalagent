@@ -5,7 +5,7 @@ Each save writes a new file `policy_v{NNN}.json` in the policy directory and nev
 overwrites an older one, so every past brief can be traced to the policy it used.
 Version 0 means "no saved policy yet; built-in defaults are in use".
 
-Policies live in backend/policies/, not backend/data/ (which /api/cases lists as cases).
+Policies live in backend/policies/.
 """
 import json
 import re

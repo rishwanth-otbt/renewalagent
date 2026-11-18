@@ -1,5 +1,5 @@
 """
-One-time import: copy the case files in backend/data/*.json into the Contracts table.
+One-time import: copy the case files in backend/tests/fixtures/*.json into the Contracts table.
 
 Run after 001_create_tables.sql, from the backend folder:
     python migration/import_json_cases.py            # import
@@ -23,7 +23,7 @@ from app.db import repository as repo  # noqa: E402
 from app.db.database import session_scope  # noqa: E402
 from app.db.models import Contract  # noqa: E402
 
-DATA_DIR = BACKEND_DIR / "data"
+DATA_DIR = BACKEND_DIR / "tests" / "fixtures"
 DISPLAY_NAME_KEY = "_display_name"  # where the old file storage kept the uploaded file name
 
 
@@ -56,7 +56,7 @@ def main() -> int:
                     s,
                     display_name=display_name,
                     original_filename=name if isinstance(name, str) else path.name,
-                    uploaded_by="import from backend/data",
+                    uploaded_by="import from backend/tests/fixtures",
                     data=data,
                 )
             added += 1

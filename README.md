@@ -80,7 +80,7 @@ If a result change is intended, regenerate them with `python -m tests.make_golde
 
 Upload a `.json` file conforming to the contract schema with **Upload** in the web interface. It is stored in the SQL Server database `renewaldesk` (table `Contracts`) and shows up in the case selector. Generated briefs are saved in `EvaluationResults` and PDF exports (who and when) in `PdfExports`. Database setup: `backend/migration/README.md`.
 
-The files in `backend/data/` are test fixtures for the golden tests; `python backend/migration/import_json_cases.py` copies them into the database.
+The files in `backend/tests/fixtures/` are test fixtures for the golden tests; `python backend/migration/import_json_cases.py` copies them into the database.
 
 The schema is strict (`backend/app/models/input_models.py`). Every field used in a calculation or decision
 (dates, notice period, auto-renewal, pricing, seats, SLA figures, budget, budget owner, ...) is required and has

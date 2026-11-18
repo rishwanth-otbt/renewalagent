@@ -9,7 +9,7 @@ REPO_DIR = BACKEND_DIR.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-DATA_DIR = BACKEND_DIR / "data"
+DATA_DIR = BACKEND_DIR / "tests" / "fixtures"
 SAMPLES_DIR = REPO_DIR / "sample_uploads"
 GOLDEN_FILE = Path(__file__).resolve().parent / "golden" / "golden_results.json"
 

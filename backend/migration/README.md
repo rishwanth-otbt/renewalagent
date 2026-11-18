@@ -30,7 +30,7 @@ Times are the SQL Server machine's local time.
    ```
    A database made with the first version of 001 (which had CaseKey / RenewalId columns) also
    needs `002_drop_case_number_columns.sql`. On a new database it does nothing.
-3. Copy the existing case files from `backend/data/` into `Contracts`:
+3. Copy the existing case files from `backend/tests/fixtures/` into `Contracts`:
    ```
    python migration/import_json_cases.py
    ```

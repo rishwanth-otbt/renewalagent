@@ -9,7 +9,7 @@ import main
 from app.db.database import session_scope
 from app.db.models import Contract, EvaluationResult, PdfExport
 
-SAMPLE = Path(__file__).resolve().parents[1] / "data" / "renewal_input_001.json"
+SAMPLE = Path(__file__).resolve().parents[0] / "fixtures" / "renewal_input_001.json"
 
 
 def _upload(client, filename="Acme CRM.json", uploaded_by=None):
