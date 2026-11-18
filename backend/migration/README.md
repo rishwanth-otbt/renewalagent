@@ -38,6 +38,9 @@ Times are the SQL Server machine's local time.
 
 ## Code
 
+Full table spec: `TABLES_SPEC.md`.
+
+
 - `app/db/database.py` — connection (`DATABASE_URL`, default LocalDB + Windows login).
 - `app/db/models.py` — ORM models; keep them in step with the SQL script.
 - `app/db/repository.py` — the queries the API uses.
