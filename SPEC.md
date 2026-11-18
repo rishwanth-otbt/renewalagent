@@ -96,3 +96,13 @@ sample_uploads/       test cases, named by expected result
 - Every decision path has a sample case in `sample_uploads/` named by its expected result.
 - Changes must keep existing samples at their expected results (checked with a fixed assessment date).
 - Invalid-input samples must still be rejected with 422.
+
+## 11. Tech stack
+
+| Part | Technology |
+| --- | --- |
+| Backend | Python 3.12, FastAPI, Uvicorn, Pydantic v2 |
+| Database | SQL Server (LocalDB by default), SQLAlchemy 2 ORM, `mssql-python` driver |
+| Frontend | Plain HTML, CSS, JavaScript (no framework, no build step), served by FastAPI |
+| Config | `python-dotenv` (`backend/.env`, `DATABASE_URL`) |
+| Tests | pytest, httpx (FastAPI TestClient) |
