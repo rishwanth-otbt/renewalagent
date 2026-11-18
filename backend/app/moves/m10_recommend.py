@@ -12,13 +12,15 @@ except ImportError:
     from app.core.base_move import BaseMove, MoveTrace
 
 
-HARD_TO_REPLACE_LEVELS = {"high", "very high", "critical"}
-LONG_MIGRATION_MONTHS = 12
-NOTICE_URGENT_DAYS = 21  # mirrors M03 G2
+RATING_ORDER = {"Needs Improvement": 0, "Acceptable": 1, "Good": 2}
 
 
 def _fmt_usd(v: float) -> str:
     return f"${v:,.0f}"
+
+
+def _rating_meets(rating: str, minimum: str) -> bool:
+    return RATING_ORDER.get(rating, -1) >= RATING_ORDER[minimum]
 
 
 class MoveM10ModelCostsAndRecommend(BaseMove):
@@ -34,7 +36,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         if d.notice_passed and d.auto_renewal:
             exit_right = ("invoke the termination-for-convenience clause if terms are not met"
                           if d.termination_for_convenience
-                          else "negotiate a mutual early-exit or a 12-month bridge term (no termination-for-convenience right)")
+                          else f"negotiate a mutual early-exit or a {d.policy.negotiation.bridge_term_months}-month bridge term (no termination-for-convenience right)")
             return (f"Notice deadline ({d.notice_deadline}) was missed and the contract auto-renews at term end "
                     f"({d.renewal_deadline}). Use the pending renewal as leverage and {exit_right}.")
         if d.notice_passed:
@@ -59,6 +61,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         raw = dossier.raw_data
         history = raw["renewal_history"]
         internal = raw["internal_assessment"]
+        pol = dossier.policy
 
         # ----------------------------------------------------
         # Action A1: Model Commercial Deltas & 3-Year Exposure (incl. contractual price cap)
@@ -72,12 +75,12 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             dossier.three_year_proposal = round(dossier.proposed_acv * term_factor, 2)
 
             if dossier.approved_budget_acv > 0:
-                if dossier.proposed_acv <= dossier.approved_budget_acv and dossier.increase_pct <= 5.0:
+                if dossier.proposed_acv <= dossier.approved_budget_acv and dossier.increase_pct <= pol.renew.max_increase_pct:
                     dossier.negotiation_target_acv = dossier.proposed_acv
                 else:
                     dossier.negotiation_target_acv = dossier.approved_budget_acv
             else:
-                dossier.negotiation_target_acv = round(dossier.current_acv * 1.03, 2)
+                dossier.negotiation_target_acv = round(dossier.current_acv * (1 + pol.budget.no_budget_target_uplift_pct / 100), 2)
 
             # Contractual price-increase cap (MSA). A proposal above the cap is not enforceable as-is.
             cap = raw["msa"].get("price_increase_cap_pct")
@@ -131,10 +134,10 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         def action_a3():
             risks: List[Dict[str, str]] = []
 
-            if dossier.increase_pct >= 25.0:
+            if dossier.increase_pct >= pol.risk.severe_increase_pct:
                 risks.append({"risk": f"Severe price escalation (+{dossier.increase_pct}%)", "level": "High", "impact": "Substantial unbudgeted financial exposure"})
-            elif dossier.increase_pct >= 10.0:
-                level = "High" if dossier.increase_pct >= 15 else "Medium"
+            elif dossier.increase_pct >= pol.risk.medium_increase_pct:
+                level = "High" if dossier.increase_pct >= pol.risk.high_increase_pct else "Medium"
                 risks.append({"risk": f"Commercial price increase (+{dossier.increase_pct}%)", "level": level, "impact": "Budget overrun without enhanced capacity"})
 
             if dossier.cap_breach:
@@ -149,19 +152,22 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                 risks.append({"risk": f"Seat expansion (+{dossier.seat_change:,}) not supported by usage", "level": "Medium", "impact": "Paying for growth while current seats sit idle"})
 
             if dossier.added_modules:
-                risks.append({"risk": f"Bundled new modules ({', '.join(dossier.added_modules)})", "level": "Medium" if dossier.increase_pct > 5 else "Low",
+                risks.append({"risk": f"Bundled new modules ({', '.join(dossier.added_modules)})", "level": "Medium" if dossier.increase_pct > pol.renew.max_increase_pct else "Low",
                               "impact": "Scope added to the renewal may be driving part of the price increase"})
 
-            if dossier.support_sla_achievement < 75.0 or dossier.critical_incidents_count >= 3 or dossier.uptime_gap > 0.15:
+            perf = pol.performance
+            if (dossier.support_sla_achievement < perf.poor_support_sla_pct or dossier.critical_incidents_count >= perf.poor_incidents
+                    or dossier.uptime_gap > perf.poor_uptime_gap):
                 risks.append({"risk": "Chronic SLA underperformance & disruption", "level": "High", "impact": "Operational downtime and productivity degradation"})
 
-            if dossier.proposed_term_months >= 36 and (dossier.increase_pct > 5.0 or dossier.performance_rating == "Needs Improvement"):
+            if (dossier.proposed_term_months >= pol.risk.long_term_months
+                    and (dossier.increase_pct > pol.renew.max_increase_pct or dossier.performance_rating == "Needs Improvement")):
                 risks.append({"risk": f"{dossier.proposed_term_months}-month term lock-in", "level": "Medium", "impact": "Reduced operational and architectural flexibility"})
 
             if not dossier.termination_for_convenience:
                 risks.append({"risk": "No termination for convenience clause", "level": "Medium", "impact": "Inability to exit agreement early if service degrades"})
 
-            if len(dossier.roadmap_delayed_features) >= 2:
+            if len(dossier.roadmap_delayed_features) >= pol.risk.roadmap_backlog_count:
                 risks.append({"risk": "Roadmap delivery backlogs", "level": "Medium", "impact": "Failure to realize anticipated platform capabilities"})
 
             if dossier.notice_passed and dossier.auto_renewal:
@@ -179,7 +185,14 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
 
             high = [r for r in risks if r["level"] == "High"]
             dossier.risk_items = risks
-            dossier.risk_level = "High" if len(high) >= 2 else ("Medium–High" if len(high) == 1 else "Low" if len(risks) == 1 and risks[0]["level"] == "Low" else "Medium")
+            if len(high) >= pol.risk.high_items_for_high_level:
+                dossier.risk_level = "High"
+            elif high:
+                dossier.risk_level = "Medium–High"
+            elif len(risks) == 1 and risks[0]["level"] == "Low":
+                dossier.risk_level = "Low"
+            else:
+                dossier.risk_level = "Medium"
 
             if dossier.risk_level == "Low":
                 dossier.critical_concern = "No acute commercial or operational red flags detected. Maintain regular quarterly governance."
@@ -195,7 +208,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         # Decision drivers: the facts that push away from a clean renewal
         # ----------------------------------------------------
         drivers: List[str] = []
-        if dossier.increase_pct > 5.0:
+        if dossier.increase_pct > pol.renew.max_increase_pct:
             drivers.append(f"+{dossier.increase_pct}% price increase (historical average {dossier.historical_avg_increase_pct}%)")
         if dossier.cap_breach:
             drivers.append(f"increase exceeds the contractual {dossier.price_cap_pct:g}% cap")
@@ -203,7 +216,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             drivers.append(f"{_fmt_usd(dossier.budget_gap_usd)} over the approved budget")
         if dossier.has_shelfware:
             drivers.append(f"{dossier.utilization_pct}% seat utilization ({dossier.inactive_seats:,} inactive seats)")
-        if dossier.performance_rating != "Good":
+        if not _rating_meets(dossier.performance_rating, pol.renew.min_performance_rating):
             drivers.append(
                 f"performance rated {dossier.performance_rating} ({dossier.actual_uptime}% uptime vs {dossier.contracted_uptime}% contracted, "
                 f"{dossier.support_sla_achievement}% support SLA, {dossier.critical_incidents_count} critical incidents)"
@@ -217,9 +230,15 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         # ----------------------------------------------------
         # Gate G1: Primary Strategic Recommendation Gate
         # ----------------------------------------------------
-        is_switch_candidate = (dossier.increase_pct >= 30.0) or (dossier.uptime_gap > 0.5 and dossier.performance_rating == "Needs Improvement" and dossier.increase_pct >= 20.0)
-        is_renew_candidate = (dossier.increase_pct <= 5.0 and dossier.performance_rating == "Good"
-                              and dossier.budget_gap_usd <= 0 and not dossier.cap_breach)
+        sw, rn = pol.switch, pol.renew
+        is_switch_candidate = (dossier.increase_pct >= sw.price_shock_pct) or (
+            dossier.uptime_gap > sw.poor_performance_uptime_gap
+            and dossier.performance_rating == "Needs Improvement"
+            and dossier.increase_pct >= sw.poor_performance_min_increase_pct)
+        is_renew_candidate = (dossier.increase_pct <= rn.max_increase_pct
+                              and _rating_meets(dossier.performance_rating, rn.min_performance_rating)
+                              and (dossier.budget_gap_usd <= 0 or not rn.require_within_budget)
+                              and (not dossier.cap_breach or not rn.require_within_price_cap))
 
         if is_switch_candidate:
             routing_decision = "ROUTE_SWITCH_BENCHMARK"
@@ -242,8 +261,8 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
         # ----------------------------------------------------
         replacement_difficulty = internal["replacement_difficulty"]
         migration_months = internal["migration_estimate_months"]
-        dossier.hard_to_replace = (replacement_difficulty.strip().lower() in HARD_TO_REPLACE_LEVELS
-                                   or migration_months >= LONG_MIGRATION_MONTHS)
+        dossier.hard_to_replace = (replacement_difficulty.strip().lower() in sw.hard_to_replace_levels
+                                   or migration_months >= sw.long_migration_months)
         dossier.switch_downgraded = (routing_decision == "ROUTE_SWITCH_BENCHMARK"
                                      and dossier.hard_to_replace
                                      and dossier.performance_rating != "Needs Improvement")
@@ -298,7 +317,8 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                 if dossier.notice_passed and not dossier.auto_renewal:
                     objectives.insert(0, f"Sign before term end ({dossier.renewal_deadline}); there is no auto-renewal and the notice window has closed.")
                 dossier.negotiation_objectives = objectives
-                dossier.fallback_strategy = "If the vendor attempts last-minute commercial changes, negotiate a 1-year bridge extension at the current rate."
+                dossier.fallback_strategy = (f"If the vendor attempts last-minute commercial changes, negotiate a "
+                                             f"{pol.negotiation.bridge_term_months}-month bridge extension at the current rate.")
                 return "Configured RENEW strategic package"
             self.execute_action("A4", "BuildRenewStrategyPackage", action_a4)
         else:
@@ -337,7 +357,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                 if dossier.cap_breach:
                     objectives.append(f"Enforce the contractual {dossier.price_cap_pct:g}% price-increase cap: maximum ACV {_fmt_usd(dossier.capped_acv)} "
                                       f"(vendor asked +{dossier.increase_pct}%).")
-                if dossier.increase_pct > 5.0 or dossier.budget_gap_usd > 0:
+                if dossier.increase_pct > pol.renew.max_increase_pct or dossier.budget_gap_usd > 0:
                     objectives.append(f"Reject the +{dossier.increase_pct}% escalation and counter at {_fmt_usd(dossier.negotiation_target_acv)} ACV.")
                 if dossier.has_shelfware:
                     objectives.append(f"Right-size license commitment to {dossier.recommended_seats:,} seats (releasing ~{dossier.reduction_opportunity:,} inactive licenses).")
@@ -349,8 +369,8 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                     objectives.append(f"Apply {_fmt_usd(dossier.service_credits_available)} of unclaimed SLA service credits against Year 1 invoicing.")
                 if dossier.performance_rating != "Good":
                     objectives.append(f"Institute enforceable service credits for availability below {dossier.contracted_uptime}% and support SLA misses.")
-                objectives.append("Introduce a contract flexibility clause permitting annual ±10% seat volume adjustments.")
-                objectives.append("Secure a price-protection cap (maximum 3% annual escalation) for future renewal cycles.")
+                objectives.append(f"Introduce a contract flexibility clause permitting annual ±{pol.negotiation.seat_flex_pct:g}% seat volume adjustments.")
+                objectives.append(f"Secure a price-protection cap (maximum {pol.negotiation.future_price_cap_pct:g}% annual escalation) for future renewal cycles.")
                 dossier.negotiation_objectives = objectives
 
                 dossier.fallback_strategy = self._notice_fallback(
@@ -388,7 +408,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                     objectives.append(f"If staying, cut license volume to {dossier.recommended_seats:,} seats (shedding {dossier.reduction_opportunity:,} unused seats).")
                 if dossier.added_modules:
                     objectives.append(f"Refuse bundled additions ({', '.join(dossier.added_modules)}).")
-                objectives.append("Incorporate a 6-month transition assistance clause ensuring zero data-export or exit penalties.")
+                objectives.append(f"Incorporate a {pol.negotiation.transition_assistance_months}-month transition assistance clause ensuring zero data-export or exit penalties.")
                 objectives.append("Parallel-track technical discovery with alternative platforms to demonstrate a viable walk-away posture.")
                 dossier.negotiation_objectives = objectives
                 dossier.fallback_strategy = self._notice_fallback(
