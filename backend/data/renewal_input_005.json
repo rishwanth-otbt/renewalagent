@@ -1,0 +1,184 @@
+{
+  "case_id": "RENEWAL-2026-005",
+  "vendor": {
+    "name": "SecureNet Defense",
+    "service_type": "Endpoint Detection & Response (EDR) Platform",
+    "account_manager": "Priya Raman",
+    "account_manager_email": "priya.raman@securenet.example.com",
+    "vendor_tier": "Tier 1 Strategic"
+  },
+  "msa": {
+    "contract_id": "MSA-SND-2023-0217",
+    "signed_date": "2023-03-01",
+    "current_term_start": "2024-03-01",
+    "current_term_end": "2027-02-28",
+    "notice_period_days": 90,
+    "auto_renewal": true,
+    "governing_law": "New York, USA",
+    "payment_terms_days": 45,
+    "termination_for_convenience": true,
+    "price_increase_cap_pct": 7
+  },
+  "current_pricing": {
+    "annual_contract_value": 384000,
+    "total_seats": 3200,
+    "unit_price_per_seat": 120,
+    "billing_frequency": "annual",
+    "modules_included": [
+      "EDR Core",
+      "Threat Intelligence Feed",
+      "Managed Threat Hunting"
+    ],
+    "currency": "USD"
+  },
+  "vendor_proposal": {
+    "received_date": "2026-10-20",
+    "proposed_annual_value": 518400,
+    "proposed_seats": 3200,
+    "proposed_unit_price": 162,
+    "proposed_term_months": 24,
+    "proposed_modules": [
+      "EDR Core",
+      "Threat Intelligence Feed",
+      "Managed Threat Hunting",
+      "Identity Threat Detection"
+    ],
+    "price_increase_justification": "Demo variant: +35% price shock",
+    "proposal_expiry_date": "2026-12-15"
+  },
+  "sla": {
+    "contracted_uptime_pct": 99.95,
+    "contracted_support_response_hours": 1,
+    "contracted_resolution_hours": 8,
+    "actual_uptime_pct": 99.97,
+    "actual_support_sla_achievement_pct": 94.5,
+    "critical_incidents_count": 2,
+    "critical_incidents_detail": [
+      {
+        "date": "2025-01-22",
+        "duration_hours": 1.5,
+        "impacted_users": 800
+      },
+      {
+        "date": "2026-04-09",
+        "duration_hours": 2,
+        "impacted_users": 1200
+      }
+    ],
+    "service_credits_claimed_usd": 4000,
+    "service_credits_available_usd": 6500
+  },
+  "addendum": [
+    {
+      "addendum_id": "ADD-SND-01",
+      "signed_date": "2024-09-15",
+      "description": "Managed Threat Hunting add-on (12x5 coverage)",
+      "expiry": "2027-02-28",
+      "status": "active"
+    }
+  ],
+  "usage": {
+    "total_provisioned_seats": 3200,
+    "active_seats_last_90_days": 2860,
+    "inactive_seats": 340,
+    "departments": [
+      {
+        "name": "Engineering",
+        "provisioned": 1400,
+        "active": 1310
+      },
+      {
+        "name": "Sales & Marketing",
+        "provisioned": 1000,
+        "active": 830
+      },
+      {
+        "name": "Corporate & Ops",
+        "provisioned": 800,
+        "active": 720
+      }
+    ],
+    "feature_adoption": {
+      "edr_core_pct": 96,
+      "threat_intelligence_feed_pct": 71,
+      "managed_threat_hunting_pct": 58
+    }
+  },
+  "roadmap": {
+    "promised_milestones": [
+      {
+        "feature": "Linux Agent GA",
+        "promised_date": "2024-09-01",
+        "delivered": true,
+        "actual_date": "2024-08-20"
+      },
+      {
+        "feature": "SIEM Native Connector",
+        "promised_date": "2025-03-01",
+        "delivered": true,
+        "actual_date": "2025-04-15"
+      },
+      {
+        "feature": "Automated Containment Playbooks",
+        "promised_date": "2025-12-01",
+        "delivered": true,
+        "actual_date": "2025-11-28"
+      },
+      {
+        "feature": "Mobile Device Coverage",
+        "promised_date": "2026-09-01",
+        "delivered": false,
+        "actual_date": null
+      }
+    ]
+  },
+  "emails": [
+    {
+      "date": "2026-10-20",
+      "from": "priya.raman@securenet.example.com",
+      "subject": "2027 Renewal Proposal - SecureNet Defense",
+      "summary": "Vendor proposed 12.5% uplift bundling Identity Threat Detection and 24x7 SOC coverage on a 24-month term."
+    },
+    {
+      "date": "2026-11-05",
+      "from": "ciso@acme.com",
+      "subject": "RE: SecureNet Renewal - Keep, but hold them to the cap",
+      "summary": "CISO wants to retain the platform but noted the 7% MSA cap and asked procurement to unbundle Identity Threat Detection pricing."
+    }
+  ],
+  "renewal_history": [
+    {
+      "renewal_cycle": "2023-2024",
+      "original_acv": 330000,
+      "renewed_acv": 360000,
+      "increase_pct": 9.1,
+      "seats": 3000,
+      "term_months": 12,
+      "outcome": "Renewed after pilot conversion",
+      "negotiated_savings_usd": 18000
+    },
+    {
+      "renewal_cycle": "2024-2027",
+      "original_acv": 360000,
+      "renewed_acv": 384000,
+      "increase_pct": 6.7,
+      "seats": 3200,
+      "term_months": 36,
+      "outcome": "Renewed with 7% price cap and threat hunting addendum",
+      "negotiated_savings_usd": 25000
+    }
+  ],
+  "internal_assessment": {
+    "strategic_importance": "High",
+    "replacement_difficulty": "Medium",
+    "known_alternatives": [
+      "CrowdStrike Falcon",
+      "Microsoft Defender for Endpoint",
+      "SentinelOne Singularity"
+    ],
+    "migration_estimate_months": 4,
+    "internal_champion": "CISO",
+    "budget_owner": "CIO",
+    "approved_budget_acv": 410000
+  }
+}
