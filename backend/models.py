@@ -125,3 +125,7 @@ class RenewalInputData(BaseModel):
 
 class ProcessRequest(BaseModel):
     case_id: str
+
+class UploadCaseRequest(BaseModel):
+    filename: str
+    data: Dict[str, Any]

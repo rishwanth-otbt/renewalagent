@@ -38,6 +38,8 @@ function setupEventListeners() {
   const caseSelect = document.getElementById("caseSelect");
   const reloadBtn = document.getElementById("reloadBtn");
   const printBtn = document.getElementById("printBtn");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const fileUploadInput = document.getElementById("fileUploadInput");
 
   caseSelect.addEventListener("change", (e) => {
     if (e.target.value) {
@@ -54,12 +56,43 @@ function setupEventListeners() {
   printBtn.addEventListener("click", () => {
     window.print();
   });
+
+  if (uploadBtn && fileUploadInput) {
+    uploadBtn.addEventListener("click", () => {
+      fileUploadInput.click();
+    });
+
+    fileUploadInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+
+        // Upload custom contract JSON to backend
+        const res = await fetch(`${API_BASE}/api/upload`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: file.name, data: parsed })
+        });
+        if (!res.ok) throw new Error("Server rejected JSON file");
+        const resp = await res.json();
+
+        // Refresh case list and immediately display the uploaded case
+        await loadCaseList(resp.case_id);
+      } catch (err) {
+        alert(`Error uploading JSON: ${err.message}`);
+      } finally {
+        fileUploadInput.value = "";
+      }
+    });
+  }
 }
 
 /**
  * Fetch available renewal cases from FastAPI
  */
-async function loadCaseList() {
+async function loadCaseList(preferredCaseId = null) {
   const caseSelect = document.getElementById("caseSelect");
   try {
     const res = await fetch(`${API_BASE}/api/cases`);
@@ -74,8 +107,12 @@ async function loadCaseList() {
         opt.textContent = c.replace(/_/g, " ").toUpperCase();
         caseSelect.appendChild(opt);
       });
-      // Load first case automatically
-      loadCaseBrief(data.cases[0]);
+      // Select the preferred case if provided, otherwise the first case
+      const targetCase = (preferredCaseId && data.cases.includes(preferredCaseId)) 
+        ? preferredCaseId 
+        : data.cases[0];
+      caseSelect.value = targetCase;
+      loadCaseBrief(targetCase);
     } else {
       caseSelect.innerHTML = '<option value="">No cases found</option>';
     }

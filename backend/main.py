@@ -8,10 +8,10 @@ from fastapi.responses import FileResponse
 
 try:
     from backend.state_machine import RenewalStateMachine
-    from backend.models import ProcessRequest
+    from backend.models import ProcessRequest, UploadCaseRequest
 except ImportError:
     from state_machine import RenewalStateMachine
-    from models import ProcessRequest
+    from models import ProcessRequest, UploadCaseRequest
 
 app = FastAPI(
     title="AI IT Vendor Renewal Intelligence Agent - POC 1",
@@ -68,6 +68,18 @@ def get_case_brief(case_id: str):
 def process_case(request: ProcessRequest):
     """Processes a case by ID via POST and returns the generated executive brief"""
     return get_case_brief(request.case_id)
+
+@app.post("/api/upload")
+def upload_case(req: UploadCaseRequest):
+    """Receives custom contract JSON, saves it to data directory, and returns its case_id"""
+    case_stem = Path(req.filename).stem
+    save_path = DATA_DIR / f"{case_stem}.json"
+    try:
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(req.data, f, indent=2)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+    return {"message": "File uploaded successfully", "case_id": case_stem}
 
 # Mount frontend at root so index.html, style.css, and app.js are all served correctly
 if FRONTEND_DIR.exists():
