@@ -2,17 +2,22 @@ import json
 import re
 from datetime import date
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field, ValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 try:
     from backend.app.core.orchestrator import RenewalDeskOrchestrator, CaseValidationError, validate_case
+    from backend.app.core.policy_store import default_store
     from backend.app.models.input_models import ProcessRequest, UploadCaseRequest
+    from backend.app.models.policy_models import RenewalPolicy, policy_field_catalog
 except ImportError:
     from app.core.orchestrator import RenewalDeskOrchestrator, CaseValidationError, validate_case
+    from app.core.policy_store import default_store
     from app.models.input_models import ProcessRequest, UploadCaseRequest
+    from app.models.policy_models import RenewalPolicy, policy_field_catalog
 
 app = FastAPI(
     title="AI IT Vendor Renewal Intelligence Agent - POC 1",
@@ -30,6 +35,13 @@ app.add_middleware(
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
+
+# Versioned client policy (backend/policies/). Module-level so tests can swap in a temporary store.
+POLICY_STORE = default_store()
+
+
+def _orchestrator() -> RenewalDeskOrchestrator:
+    return RenewalDeskOrchestrator(POLICY_STORE)
 
 
 def _case_path(case_id: str) -> Path:
@@ -82,7 +94,7 @@ def get_case_brief(case_id: str, as_of: Optional[date] = None):
         raise HTTPException(status_code=400, detail=f"Error reading JSON file: {str(e)}")
 
     try:
-        result = RenewalDeskOrchestrator().run_play(raw_data, as_of=as_of)
+        result = _orchestrator().run_play(raw_data, as_of=as_of)
     except CaseValidationError as e:
         raise HTTPException(
             status_code=422,
@@ -130,6 +142,106 @@ def upload_case(req: UploadCaseRequest):
         "case_id": case_stem,
         "renewal_id": data["case_id"],
         "original_filename": req.filename,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Policy: the client's renewal rules (M1)
+# ---------------------------------------------------------------------------
+
+class PolicySaveRequest(BaseModel):
+    policy: Dict[str, Any]
+    saved_by: str = Field(min_length=1)
+    note: Optional[str] = None
+
+
+class PolicyPreviewRequest(BaseModel):
+    policy: Dict[str, Any]
+    as_of: Optional[date] = None
+
+
+def _policy_errors(exc: ValidationError) -> List[str]:
+    out = []
+    for err in exc.errors():
+        loc = ".".join(str(p) for p in err["loc"])
+        msg = err["msg"].removeprefix("Value error, ")
+        out.append(f"{loc}: {msg}" if loc else msg)
+    return out
+
+
+def _parse_policy(data: Dict[str, Any]) -> RenewalPolicy:
+    try:
+        return RenewalPolicy.model_validate(data)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail={"message": "Policy is invalid", "errors": _policy_errors(exc)})
+
+
+@app.get("/api/policy")
+def get_policy():
+    """Current policy (latest saved version, or built-in defaults as version 0), plus defaults and field catalog."""
+    return {
+        "current": POLICY_STORE.load_current().to_dict(),
+        "defaults": RenewalPolicy().model_dump(),
+        "catalog": policy_field_catalog(),
+    }
+
+
+@app.put("/api/policy")
+def save_policy(req: PolicySaveRequest):
+    """Validate and save the policy as the next version. 422 with a list of problems if invalid."""
+    policy = _parse_policy(req.policy)
+    stored = POLICY_STORE.save(policy, saved_by=req.saved_by, note=req.note)
+    return stored.to_dict()
+
+
+@app.get("/api/policy/history")
+def policy_history():
+    """All saved versions, newest first."""
+    return {"versions": [s.to_dict() for s in POLICY_STORE.history()]}
+
+
+def _summary(brief: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "decision": brief["recommendation"]["primary"],
+        "risk_level": brief["risks"]["overall_level"],
+        "negotiation_target_acv": brief["financials"]["negotiation_target_acv"],
+        "performance_rating": brief["performance"]["overall_rating"],
+        "notice_status": brief["meta"]["notice_status"],
+        "decided_by": brief["meta"]["decided_by"],
+    }
+
+
+@app.post("/api/policy/preview")
+def preview_policy(req: PolicyPreviewRequest):
+    """Run every stored case with the current policy and with a draft policy; nothing is saved."""
+    draft = _parse_policy(req.policy)
+    current = POLICY_STORE.load_current()
+    as_of = req.as_of or date.today()
+    orch = _orchestrator()
+    rows = []
+    for path in sorted(DATA_DIR.glob("*.json")):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            now = orch.run_play(raw, as_of=as_of, policy=current.policy, policy_version=current.version)["brief"]
+            new = orch.run_play(raw, as_of=as_of, policy=draft)["brief"]
+        except (CaseValidationError, ValueError, OSError) as e:
+            rows.append({"case_id": path.stem, "error": str(e)})
+            continue
+        a, b = _summary(now), _summary(new)
+        rows.append({
+            "case_id": path.stem,
+            "vendor": now["vendor"]["name"],
+            "current": a,
+            "draft": b,
+            "decision_changed": a["decision"] != b["decision"],
+            "changed_fields": [k for k in a if k != "decided_by" and a[k] != b[k]],
+        })
+    return {
+        "as_of": as_of.isoformat(),
+        "current_version": current.version,
+        "cases": rows,
+        "decisions_changed": sum(1 for r in rows if r.get("decision_changed")),
     }
 
 
