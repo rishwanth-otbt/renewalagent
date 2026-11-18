@@ -32,6 +32,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def no_stale_frontend(request, call_next):
+    """Make the browser re-check frontend files on every load, so edits show up without a hard refresh."""
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
