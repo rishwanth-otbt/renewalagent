@@ -13,6 +13,10 @@ class Dossier:
     raw_data: Dict[str, Any] = field(default_factory=dict)
     as_of: Optional[date] = None
     case_id: Optional[str] = None
+    # Client policy in force for this run (RenewalPolicy). Every threshold a move uses comes from here.
+    policy: Any = None
+    policy_version: Optional[int] = None       # 0 = built-in defaults; None = unsaved draft (preview)
+    rule_checks: List[Dict[str, Any]] = field(default_factory=list)  # rules that decided the label (M10 G1)
 
     # 1. Populated by M01 (Set Renewal Goals)
     decision_question: Optional[str] = None

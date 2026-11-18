@@ -17,6 +17,8 @@ try:
     from backend.app.core.dossier import Dossier
     from backend.app.core.base_move import MoveTrace
     from backend.app.models.input_models import RenewalInputData
+    from backend.app.models.policy_models import RenewalPolicy
+    from backend.app.core.policy_store import PolicyStore, default_store
     from backend.app.moves.m01_goals import MoveM01SetRenewalGoals
     from backend.app.moves.m02_terms import MoveM02CheckAgreementTerms
     from backend.app.moves.m03_deadlines import MoveM03CheckRenewalDeadlines
@@ -27,6 +29,8 @@ except ImportError:
     from app.core.dossier import Dossier
     from app.core.base_move import MoveTrace
     from app.models.input_models import RenewalInputData
+    from app.models.policy_models import RenewalPolicy
+    from app.core.policy_store import PolicyStore, default_store
     from app.moves.m01_goals import MoveM01SetRenewalGoals
     from app.moves.m02_terms import MoveM02CheckAgreementTerms
     from app.moves.m03_deadlines import MoveM03CheckRenewalDeadlines
@@ -59,7 +63,8 @@ def validate_case(raw_json: Dict[str, Any]) -> RenewalInputData:
 
 
 class RenewalDeskOrchestrator:
-    def __init__(self):
+    def __init__(self, store: Optional[PolicyStore] = None):
+        self.store = store
         self.moves = [
             MoveM01SetRenewalGoals(),
             MoveM02CheckAgreementTerms(),
@@ -69,12 +74,28 @@ class RenewalDeskOrchestrator:
             MoveM10ModelCostsAndRecommend(),
         ]
 
-    def run_play(self, raw_json: Dict[str, Any], as_of: Optional[date] = None) -> Dict[str, Any]:
-        """as_of is the assessment date; it defaults to today and can be fixed for repeatable runs/tests."""
+    def run_play(
+        self,
+        raw_json: Dict[str, Any],
+        as_of: Optional[date] = None,
+        policy: Optional[RenewalPolicy] = None,
+        policy_version: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """as_of is the assessment date; it defaults to today and can be fixed for repeatable runs/tests.
+
+        policy: the RenewalPolicy to apply. When omitted, the current saved policy is loaded from the
+        store (built-in defaults if none is saved). A policy passed in without policy_version is treated
+        as an unsaved draft (version None).
+        """
         case = validate_case(raw_json)
+        if policy is None:
+            stored = (self.store or default_store()).load_current()
+            policy, policy_version = stored.policy, stored.version
         dossier = Dossier(
             raw_data=case.model_dump(by_alias=True),
             as_of=as_of or date.today(),
+            policy=policy,
+            policy_version=policy_version,
         )
         traces: List[Dict[str, Any]] = []
 

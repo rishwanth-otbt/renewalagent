@@ -466,6 +466,7 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                 "meta": {
                     "case_id": dossier.case_id,
                     "assessment_date": dossier.as_of.isoformat(),
+                    "policy_version": dossier.policy_version,
                     "renewal_deadline": dossier.renewal_deadline,
                     "notice_deadline": dossier.notice_deadline,
                     "notice_days": dossier.notice_period_days,
