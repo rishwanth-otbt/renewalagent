@@ -77,13 +77,46 @@ def health_check():
     return {"status": "ok", "service": "Renewal Intelligence Agent POC 1"}
 
 
+# Uploaded files keep a safe internal id (renewal_input_NNN) but are shown under the name the user uploaded.
+DISPLAY_NAME_KEY = "_display_name"
+
+
+def _clean_filename(filename: str) -> str:
+    """The uploaded file's own name, without any folder part, trimmed to a sensible length."""
+    name = re.split(r"[\\/]", filename or "")[-1].strip()
+    return name[:120]
+
+
+def _display_name(path: Path) -> str:
+    """Original upload name if recorded, else a readable form of the id (renewal_input_001 -> Renewal Input 001)."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            name = json.load(f).get(DISPLAY_NAME_KEY)
+        if isinstance(name, str) and name.strip():
+            return name.strip()
+    except (OSError, ValueError, AttributeError):
+        pass
+    return path.stem.replace("_", " ").title()
+
+
 @app.get("/api/cases")
 def list_cases():
-    """Lists available case files in data folder"""
+    """Lists available case files in data folder.
+
+    `cases` is the list of ids (unchanged). `items` pairs each id with the name to show the user;
+    if two uploads share a name, later ones get " (2)", " (3)" so the list stays unambiguous.
+    """
     if not DATA_DIR.exists():
-        return {"cases": []}
-    files = [f.stem for f in DATA_DIR.glob("*.json")]
-    return {"cases": sorted(files)}
+        return {"cases": [], "items": []}
+    paths = sorted(DATA_DIR.glob("*.json"), key=lambda p: p.stem)
+    items, seen = [], {}
+    for p in paths:
+        name = _display_name(p)
+        seen[name] = seen.get(name, 0) + 1
+        if seen[name] > 1:
+            name = f"{name} ({seen[name]})"
+        items.append({"id": p.stem, "name": name})
+    return {"cases": [p.stem for p in paths], "items": items}
 
 
 @app.get("/api/case/{case_id}")
@@ -138,6 +171,8 @@ def upload_case(req: UploadCaseRequest):
 
     data = dict(req.data)
     data["case_id"] = f"RENEWAL-{date.today().year}-{seq:03d}"
+    display_name = _clean_filename(req.filename) or case_stem
+    data[DISPLAY_NAME_KEY] = display_name
     try:
         # "x" mode fails instead of overwriting if the file somehow already exists
         with open(save_path, "x", encoding="utf-8") as f:
@@ -151,6 +186,7 @@ def upload_case(req: UploadCaseRequest):
         "case_id": case_stem,
         "renewal_id": data["case_id"],
         "original_filename": req.filename,
+        "display_name": display_name,
     }
 
 
