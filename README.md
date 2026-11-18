@@ -62,3 +62,5 @@ The schema is strict (`backend/app/models/input_models.py`). Every field used in
 no default. A file with a missing or wrongly-typed field is rejected with HTTP 422 and a list of the exact
 problems, e.g. `msa.current_term_end: Field required` or `msa.auto_renewal: Input should be a valid boolean`.
 Nothing is filled in with an assumed value. The assessment date is the day the case is run.
+
+_Last updated: 2026-11-18._
