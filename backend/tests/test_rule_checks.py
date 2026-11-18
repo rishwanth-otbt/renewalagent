@@ -1,7 +1,7 @@
 """Every brief states the policy version and the rules that decided its label."""
 import pytest
 
-from app.core.orchestrator import RenewalDeskOrchestrator
+from app.core.orchestrator import RenewalAgentOrchestrator
 from app.models.policy_models import RenewalPolicy
 from tests.conftest import AS_OF, case_key, load_json, valid_case_files
 
@@ -12,7 +12,7 @@ RULE_IDS = ["renew.max_increase_pct", "renew.min_performance_rating", "renew.req
 
 @pytest.mark.parametrize("path", valid_case_files(), ids=case_key)
 def test_brief_explains_decision(path):
-    brief = RenewalDeskOrchestrator().run_play(load_json(path), as_of=AS_OF, policy=RenewalPolicy(), policy_version=0)["brief"]
+    brief = RenewalAgentOrchestrator().run_play(load_json(path), as_of=AS_OF, policy=RenewalPolicy(), policy_version=0)["brief"]
     meta = brief["meta"]
     decision = brief["recommendation"]["primary"]
     checks = {c["id"]: c for c in meta["rule_checks"]}

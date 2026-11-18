@@ -175,11 +175,11 @@ The `Dossier` holds cumulative structured facts extracted and computed by each m
 
 ---
 
-## 4. Orchestration Semantics (`RenewalDeskOrchestrator`)
+## 4. Orchestration Semantics (`RenewalAgentOrchestrator`)
 
 The orchestrator executes sequentially through the moves:
 ```python
-orchestrator = RenewalDeskOrchestrator()
+orchestrator = RenewalAgentOrchestrator()
 result = orchestrator.run_play(raw_contract_json)
 brief = result["brief"]
 move_trace = result["move_trace"]

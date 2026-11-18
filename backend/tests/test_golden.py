@@ -3,7 +3,7 @@ import pytest
 
 from tests.conftest import AS_OF, GOLDEN_FILE, case_key, load_json, valid_case_files
 from tests.golden_snapshot import snapshot
-from app.core.orchestrator import RenewalDeskOrchestrator
+from app.core.orchestrator import RenewalAgentOrchestrator
 from app.models.policy_models import RenewalPolicy
 
 GOLDEN = load_json(GOLDEN_FILE)
@@ -16,5 +16,5 @@ def test_every_case_has_a_golden_record():
 
 @pytest.mark.parametrize("path", CASES, ids=case_key)
 def test_default_policy_matches_golden(path):
-    brief = RenewalDeskOrchestrator().run_play(load_json(path), as_of=AS_OF, policy=RenewalPolicy(), policy_version=0)["brief"]
+    brief = RenewalAgentOrchestrator().run_play(load_json(path), as_of=AS_OF, policy=RenewalPolicy(), policy_version=0)["brief"]
     assert snapshot(brief) == GOLDEN[case_key(path)]

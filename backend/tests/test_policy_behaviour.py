@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.core.orchestrator import RenewalDeskOrchestrator
+from app.core.orchestrator import RenewalAgentOrchestrator
 from app.models.policy_models import RenewalPolicy
 from tests.conftest import AS_OF, DATA_DIR, SAMPLES_DIR, load_json
 
@@ -12,7 +12,7 @@ CLEAN = load_json(SAMPLES_DIR / "01_expect_renew_clean_good_performance_within_b
 
 
 def run(raw, policy=None, as_of=AS_OF):
-    return RenewalDeskOrchestrator().run_play(raw, as_of=as_of, policy=policy or RenewalPolicy())["brief"]
+    return RenewalAgentOrchestrator().run_play(raw, as_of=as_of, policy=policy or RenewalPolicy())["brief"]
 
 
 def with_proposal(acv):

@@ -12,14 +12,14 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 
 try:
-    from backend.app.core.orchestrator import RenewalDeskOrchestrator, CaseValidationError, validate_case
+    from backend.app.core.orchestrator import RenewalAgentOrchestrator, CaseValidationError, validate_case
     from backend.app.core.policy_store import default_store
     from backend.app.db import repository as repo
     from backend.app.db.database import session_scope
     from backend.app.models.input_models import PdfExportRequest, ProcessRequest, UploadCaseRequest
     # from backend.app.models.policy_models import RenewalPolicy, policy_field_catalog  # POLICY DISABLED
 except ImportError:
-    from app.core.orchestrator import RenewalDeskOrchestrator, CaseValidationError, validate_case
+    from app.core.orchestrator import RenewalAgentOrchestrator, CaseValidationError, validate_case
     from app.core.policy_store import default_store
     from app.db import repository as repo
     from app.db.database import session_scope
@@ -55,8 +55,8 @@ FRONTEND_DIR = BASE_DIR.parent / "frontend"
 POLICY_STORE = default_store()
 
 
-def _orchestrator() -> RenewalDeskOrchestrator:
-    return RenewalDeskOrchestrator(POLICY_STORE)
+def _orchestrator() -> RenewalAgentOrchestrator:
+    return RenewalAgentOrchestrator(POLICY_STORE)
 
 
 @app.exception_handler(SQLAlchemyError)

@@ -62,7 +62,7 @@ def validate_case(raw_json: Dict[str, Any]) -> RenewalInputData:
         raise CaseValidationError(format_validation_errors(exc)) from exc
 
 
-class RenewalDeskOrchestrator:
+class RenewalAgentOrchestrator:
     def __init__(self, store: Optional[PolicyStore] = None):
         self.store = store
         self.moves = [

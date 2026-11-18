@@ -17,7 +17,7 @@ RenewalAgent/
 │   │   ├── core/
 │   │   │   ├── base_move.py      # Base class: execute_action, skip_action, record_gate, trace models
 │   │   │   ├── dossier.py        # Central typed repository holding extracted facts and final brief
-│   │   │   └── orchestrator.py   # RenewalDeskOrchestrator: runs M01 -> M02 -> M03 -> M04 -> M05 -> M10
+│   │   │   └── orchestrator.py   # RenewalAgentOrchestrator: runs M01 -> M02 -> M03 -> M04 -> M05 -> M10
 │   │   ├── models/
 │   │   │   └── input_models.py   # Pydantic models for REST requests (Upload, Process)
 │   │   └── moves/
@@ -141,7 +141,7 @@ Add `{ id: "M06", name: "M06 Benchmark" }` to `KOZMO_MOVES`. The UI modal automa
 
 ### Run CLI Verification Across All 3 Scenarios
 ```powershell
-python -c "import sys; sys.path.insert(0, '.'); from backend.app.core.orchestrator import RenewalDeskOrchestrator; import json; orch = RenewalDeskOrchestrator(); [print(c, orch.run_play(json.load(open('backend/data/'+c)))['brief']['meta']['decision']) for c in ['renewal_input_001.json','renewal_input_002.json','renewal_input_003.json']]"
+python -c "import sys; sys.path.insert(0, '.'); from backend.app.core.orchestrator import RenewalAgentOrchestrator; import json; orch = RenewalAgentOrchestrator(); [print(c, orch.run_play(json.load(open('backend/data/'+c)))['brief']['meta']['decision']) for c in ['renewal_input_001.json','renewal_input_002.json','renewal_input_003.json']]"
 ```
 **Expected Output:**
 - `renewal_input_001.json` ➔ `Renegotiate`
