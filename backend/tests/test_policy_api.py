@@ -3,6 +3,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
+
+pytestmark = pytest.mark.skip(reason="POLICY DISABLED for this version: policy API is commented out in main.py")
 from app.core.policy_store import PolicyStore
 from app.models.policy_models import RenewalPolicy
 
