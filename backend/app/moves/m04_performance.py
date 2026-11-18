@@ -118,10 +118,16 @@ class MoveM04AssessSupplierPerformance(BaseMove):
         # ----------------------------------------------------
         # Action A6: Synthesize Overall Performance Score
         # ----------------------------------------------------
+        perf = dossier.policy.performance
+
         def action_a6():
-            if dossier.uptime_gap > 0.15 or dossier.support_sla_achievement < 75.0 or dossier.critical_incidents_count >= 3:
+            if (dossier.uptime_gap > perf.poor_uptime_gap
+                    or dossier.support_sla_achievement < perf.poor_support_sla_pct
+                    or dossier.critical_incidents_count >= perf.poor_incidents):
                 dossier.performance_rating = "Needs Improvement"
-            elif dossier.uptime_gap <= 0.05 and dossier.support_sla_achievement >= 90.0 and dossier.critical_incidents_count == 0:
+            elif (dossier.uptime_gap <= perf.good_uptime_gap
+                    and dossier.support_sla_achievement >= perf.good_support_sla_pct
+                    and dossier.critical_incidents_count <= perf.good_max_incidents):
                 dossier.performance_rating = "Good"
             else:
                 dossier.performance_rating = "Acceptable"
