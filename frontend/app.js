@@ -141,55 +141,140 @@ function setupEventListeners() {
   setupRunPanel();
 
   if (uploadBtn && fileUploadInput) {
-    uploadBtn.addEventListener("click", () => {
-      fileUploadInput.click();
+    setupUploadPanel(uploadBtn, fileUploadInput);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Left sidebar: upload panel + Run agent
+// ---------------------------------------------------------------------------
+
+/** The uploaded case waiting for "Run agent": { id, name } or null. */
+let uploadedCase = null;
+
+function setUploadPanelOpen(open) {
+  const panel = document.getElementById("sbUpload");
+  const btn = document.getElementById("uploadBtn");
+  if (!panel || !btn) return;
+  panel.hidden = !open;
+  btn.setAttribute("aria-expanded", String(open));
+  btn.classList.toggle("is-open", open);
+}
+
+function setupUploadPanel(uploadBtn, fileUploadInput) {
+  const shell = document.querySelector(".app-shell");
+  const drop = document.getElementById("sbDrop");
+  const pickFile = () => fileUploadInput.click();
+
+  uploadBtn.addEventListener("click", () => {
+    // Collapsed icon strip has no room for the panel: go straight to the file picker.
+    if (shell?.classList.contains("sb-collapsed")) { pickFile(); return; }
+    setUploadPanelOpen(document.getElementById("sbUpload").hidden);
+  });
+  // The info icon inside the upload button only explains; it does not open the panel.
+  uploadBtn.querySelector(".info-tip")?.addEventListener("click", (e) => e.stopPropagation());
+
+  // Start-screen card opens the same panel (and the sidebar itself on small screens).
+  document.getElementById("startUploadBtn")?.addEventListener("click", () => {
+    if (shell?.classList.contains("sb-collapsed")) { pickFile(); return; }
+    shell?.classList.add("sb-open");
+    setUploadPanelOpen(true);
+    drop?.focus();
+  });
+
+  drop?.addEventListener("click", pickFile);
+  drop?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickFile(); }
+  });
+  ["dragenter", "dragover"].forEach((ev) => drop?.addEventListener(ev, (e) => {
+    e.preventDefault();
+    drop.classList.add("is-over");
+  }));
+  ["dragleave", "dragend"].forEach((ev) => drop?.addEventListener(ev, () => drop.classList.remove("is-over")));
+  drop?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    drop.classList.remove("is-over");
+    const file = e.dataTransfer?.files?.[0];
+    if (file) uploadContractFile(file);
+  });
+
+  fileUploadInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (file) await uploadContractFile(file);
+    fileUploadInput.value = "";
+  });
+
+  document.getElementById("sbFileClear")?.addEventListener("click", () => {
+    setUploadedCase(null);
+    setUploadPanelOpen(true);
+  });
+  document.getElementById("sbRunBtn")?.addEventListener("click", () => {
+    if (!uploadedCase) return;
+    // Give the run and the brief the full width: fold the sidebar to its icon strip.
+    window.collapseSidebar?.();
+    runAgent(uploadedCase.id);
+  });
+}
+
+/** Validate, upload, then close the panel and wait for "Run agent" (no automatic run). */
+async function uploadContractFile(file) {
+  const drop = document.getElementById("sbDrop");
+  if (!/\.json$/i.test(file.name)) {
+    notify({ type: "error", title: "Only JSON files are supported", file: file.name,
+             message: "Choose a contract saved as a .json file." });
+    return;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch (_) {
+    notify({ type: "error", title: "This file isn't valid JSON", file: file.name,
+             message: "Check the file opens as JSON and try again." });
+    return;
+  }
+
+  drop?.classList.add("is-busy");
+  try {
+    const res = await fetch(`${API_BASE}/api/upload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, data: parsed, uploaded_by: getSavedUserName() || null })
     });
-    document.getElementById("startUploadBtn")?.addEventListener("click", () => fileUploadInput.click());
-    // The info icon inside the upload button only explains; it does not open the file picker.
-    uploadBtn.querySelector(".info-tip")?.addEventListener("click", (e) => e.stopPropagation());
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Server rejected JSON file");
+    }
+    const resp = await res.json();
+    const name = resp.display_name || resp.original_filename || file.name;
+    const vendor = parsed?.vendor?.name || parsed?.vendor_name || "";
+    notify({ type: "success", title: "Document uploaded", file: name,
+             message: "Press Run agent in the left panel to generate its brief." });
 
-    fileUploadInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        if (!/\.json$/i.test(file.name)) {
-          notify({ type: "error", title: "Only JSON files are supported", file: file.name,
-                   message: "Choose a contract saved as a .json file." });
-          return;
-        }
-        let parsed;
-        try {
-          parsed = JSON.parse(await file.text());
-        } catch (_) {
-          notify({ type: "error", title: "This file isn't valid JSON", file: file.name,
-                   message: "Check the file opens as JSON and try again." });
-          return;
-        }
+    setUploadedCase({ id: resp.case_id, name, vendor });
+    setUploadPanelOpen(false);
+    // Refresh the case list and select the new case, without running it.
+    await loadCaseList(resp.case_id);
+  } catch (err) {
+    const [summary, list] = splitProblems(err.message);
+    notify({ type: "error", title: "Upload failed", file: file.name, message: summary, details: list });
+  } finally {
+    drop?.classList.remove("is-busy");
+  }
+}
 
-        // Upload custom contract JSON to backend
-        const res = await fetch(`${API_BASE}/api/upload`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name, data: parsed, uploaded_by: getSavedUserName() || null })
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.detail || "Server rejected JSON file");
-        }
-        const resp = await res.json();
-        notify({ type: "success", title: "Document uploaded",
-                 file: resp.display_name || resp.original_filename,
-                 message: "Added as a new case. Generating its brief now." });
-
-        // Refresh case list and immediately display the uploaded case
-        await loadCaseList(resp.case_id);
-      } catch (err) {
-        const [summary, list] = splitProblems(err.message);
-        notify({ type: "error", title: "Upload failed", file: file.name, message: summary, details: list });
-      } finally {
-        fileUploadInput.value = "";
-      }
-    });
+/** Show the uploaded file card and enable Run, or clear both. */
+function setUploadedCase(c) {
+  uploadedCase = c;
+  const card = document.getElementById("sbFile");
+  const runBtn = document.getElementById("sbRunBtn");
+  if (card) card.hidden = !c;
+  if (c) {
+    document.getElementById("sbFileName").textContent = c.name;
+    document.getElementById("sbFileSub").textContent = c.vendor ? `${c.vendor} · ready to run` : "Ready to run";
+  }
+  if (runBtn) {
+    runBtn.disabled = !c || runInProgress;
+    runBtn.title = c ? "Run the agent on this contract" : "Upload a contract first";
   }
 }
 
@@ -231,11 +316,10 @@ async function loadCaseList(preferredCaseId = null) {
         caseSelect.appendChild(opt);
       });
       renderStartCases(items);
-      // Only evaluate straight away when a case was asked for (e.g. just uploaded).
-      // Otherwise the start panel stays up until the user picks a case.
+      // Select a case that was asked for (e.g. just uploaded). Nothing runs until
+      // the user presses Run agent or Generate brief.
       if (preferredCaseId && data.cases.map(String).includes(String(preferredCaseId))) {
         caseSelect.value = preferredCaseId;
-        loadCaseBrief(preferredCaseId);
       }
     } else {
       caseSelect.innerHTML = '<option value="">No cases found</option>';
@@ -299,45 +383,60 @@ function markInputsChanged() {
   document.getElementById("caseSelect").classList.remove("needs-choice");
 }
 
-const MIN_LOADING_MS = 1000;
+/**
+ * Demo pacing: the moves appear one after another over this long, then the brief shows.
+ * The backend answers in milliseconds; this delay only makes the agent's steps readable.
+ */
+const RUN_REVEAL_MS = 3000;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+let runInProgress = false;
+
+/** "Generate brief" (top bar) — same run as the sidebar's Run agent. */
+function generateBrief(caseId) {
+  return runAgent(caseId);
+}
 
 /**
- * "Generate brief" click: spinner on the button for at least 1 second, then show the brief.
+ * Run the agent on a case: both run buttons show a spinner, the moves appear one by one
+ * in the middle, then the brief is drawn below them.
  */
-async function generateBrief(caseId) {
-  const reloadBtn = document.getElementById("reloadBtn");
-  reloadBtn.classList.add("is-generating");
-  reloadBtn.disabled = true;
+async function runAgent(caseId) {
+  if (runInProgress) return;
+  runInProgress = true;
+  const buttons = [document.getElementById("reloadBtn"), document.getElementById("sbRunBtn")].filter(Boolean);
+  buttons.forEach((b) => { b.classList.add("is-generating"); b.disabled = true; });
+  const caseSelect = document.getElementById("caseSelect");
+  if (caseSelect && caseSelect.value !== String(caseId)) caseSelect.value = caseId;
   try {
-    await loadCaseBrief(caseId, MIN_LOADING_MS);
+    await loadCaseBrief(caseId, { animate: true });
   } finally {
-    reloadBtn.classList.remove("is-generating");
-    reloadBtn.disabled = false;
+    runInProgress = false;
+    buttons.forEach((b) => b.classList.remove("is-generating"));
+    document.getElementById("reloadBtn").disabled = false;
+    setUploadedCase(uploadedCase); // re-enables Run when a file is loaded
   }
 }
 
 /**
  * Fetch executive brief generated by Kozmo Move Orchestrator.
- * minMs: keep the loading state at least this long before rendering.
+ * animate: reveal the moves one by one (RUN_REVEAL_MS in total) before the brief appears.
  */
-async function loadCaseBrief(caseId, minMs = 0) {
+async function loadCaseBrief(caseId, { animate = false } = {}) {
   renderPipelineRunning();
   const briefEl = document.getElementById("briefContainer");
-  briefEl?.classList.add("is-loading");
-  const minDelay = new Promise((resolve) => setTimeout(resolve, minMs));
+  if (animate) startRunLogLive();
+  else briefEl?.classList.add("is-loading");
   try {
     const asOf = document.getElementById("asOfInput")?.value;
     // POST /api/process runs the pipeline and saves the result (EvaluationResults).
-    const [res] = await Promise.all([
-      fetch(`${API_BASE}/api/process`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ case_id: caseId, as_of: asOf || null }),
-      }),
-      minDelay,
-    ]);
+    const res = await fetch(`${API_BASE}/api/process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ case_id: caseId, as_of: asOf || null }),
+    });
     if (!res.ok) {
-      const errData = await res.json();
+      const errData = await res.json().catch(() => ({}));
       throw new Error(errData.detail || "Error evaluating case");
     }
     const brief = await res.json();
@@ -348,21 +447,73 @@ async function loadCaseBrief(caseId, minMs = 0) {
     currentResultId = brief.meta?.result_id ?? null;
     const stamp = document.getElementById("exportStamp");
     if (stamp) stamp.textContent = "";
+    currentVendorName = brief.vendor?.name || "";
+
+    if (animate) await playRunLog(currentMoveTrace, RUN_REVEAL_MS);
 
     // Render the Kozmo Move pipeline bar, the activity list and the run panel
-    currentVendorName = brief.vendor?.name || "";
     renderMovePipeline(currentMoveTrace);
     renderRunLog(currentMoveTrace);
     rpOpenMoves.clear();
     renderRunPanel();
     renderBrief(brief);
     showBrief();
+    // After the step-by-step run, fold the activity list to its one-line summary.
+    // The header stays clickable to open it again.
+    if (animate) setTimeout(() => setRunLogOpen(false), RUN_LOG_COLLAPSE_DELAY_MS);
   } catch (err) {
     console.error("Error evaluating brief:", err);
     const [summary, list] = splitProblems(err.message);
     notify({ type: "error", title: "Couldn't generate the brief", message: summary, details: list });
+    // Put the middle back as it was: the last finished run and brief, or the start panel.
+    renderMovePipeline(currentMoveTrace);
+    renderRunLog(currentMoveTrace);
+    if (animate) {
+      const prev = currentMoveTrace.length ? "briefContainer" : "startPanel";
+      document.getElementById(prev)?.removeAttribute("hidden");
+    }
   } finally {
     briefEl?.classList.remove("is-loading");
+    document.getElementById("runLog")?.classList.remove("is-live");
+  }
+}
+
+/** Short pause on the finished list before it folds, so the last green tick is seen. */
+const RUN_LOG_COLLAPSE_DELAY_MS = 600;
+
+/** Open or fold the activity list (same as clicking its header). */
+function setRunLogOpen(open) {
+  document.getElementById("runLog")?.classList.toggle("collapsed", !open);
+  document.getElementById("runLogHead")?.setAttribute("aria-expanded", String(open));
+}
+
+/** Clear the middle and show the activity list in its "starting" state. */
+function startRunLogLive() {
+  const box = document.getElementById("runLog");
+  if (!box) return;
+  document.getElementById("startPanel")?.setAttribute("hidden", "");
+  document.getElementById("briefContainer")?.setAttribute("hidden", "");
+  box.classList.remove("is-running", "collapsed");
+  box.classList.add("is-live");
+  document.getElementById("runLogHead")?.setAttribute("aria-expanded", "true");
+  document.getElementById("runLogSummary").innerHTML = "Starting the agent…";
+  document.getElementById("runLogList").innerHTML = "";
+  box.hidden = false;
+}
+
+/** Add the moves one at a time: each shows as running, then turns into a finished row. */
+async function playRunLog(trace, totalMs) {
+  const list = document.getElementById("runLogList");
+  const summary = document.getElementById("runLogSummary");
+  if (!list || !trace.length) return;
+  const step = totalMs / trace.length;
+  list.innerHTML = "";
+  for (let i = 0; i < trace.length; i++) {
+    const mt = trace[i];
+    summary.innerHTML = `Agent running · move <strong>${i + 1}</strong> of ${trace.length}`;
+    list.insertAdjacentHTML("beforeend", runLogRowHtml(mt, i, true));
+    await sleep(step);
+    list.lastElementChild.outerHTML = runLogRowHtml(mt, i, false);
   }
 }
 
@@ -519,7 +670,6 @@ function renderBrief(data) {
   }
 
   // renderRuleChecks(meta);  // POLICY DISABLED for this version
-  renderSidebarCase(meta, vendor, rec);
 
   // 2. Section 1: Financial Impact
   const finTableBody = document.querySelector("#financialTable tbody");
@@ -746,26 +896,6 @@ function renderBrief(data) {
 }
 
 
-/**
- * Sidebar "Current brief" card: vendor, decision and policy at a glance.
- */
-function renderSidebarCase(meta, vendor, rec) {
-  const card = document.getElementById("sbCaseCard");
-  if (!card) return;
-  card.hidden = false;
-  document.getElementById("sbCaseVendor").textContent = vendor.name || "—";
-  document.getElementById("sbCaseService").textContent = vendor.service || "";
-  const decision = document.getElementById("sbCaseDecision");
-  const primary = rec.primary || "—";
-  const low = primary.toLowerCase();
-  decision.textContent = primary;
-  decision.className = `sb-decision${low.includes("renew") ? " renew" : low.includes("switch") ? " switch" : ""}`;
-  document.getElementById("sbCaseNotice").textContent = meta.notice_deadline ? `Notice by ${meta.notice_deadline}` : "";
-  // POLICY DISABLED for this version
-  // document.getElementById("sbCasePolicy").textContent = meta.policy_version === 0 ? "Default policy"
-  //   : meta.policy_version == null ? "Draft policy" : `Policy v${meta.policy_version}`;
-}
-
 
 /* POLICY DISABLED for this version: rule-check strip commented out.
 /**
@@ -922,10 +1052,27 @@ function renderRunLog(trace) {
     (t.skipped ? ` · ${t.skipped} skipped` : "") +
     (t.failed ? ` · <span class="rl-bad">${t.failed} failed</span>` : "");
 
-  list.innerHTML = trace.map((mt, idx) => {
-    const c = actionCounts(mt);
-    const state = c.failed ? "fail" : "ok";
+  list.innerHTML = trace.map((mt, idx) => runLogRowHtml(mt, idx, false)).join("");
+  list.querySelectorAll(".rl-row").forEach(row =>
+    row.addEventListener("click", () => openRunPanel(Number(row.dataset.idx))));
+  box.hidden = false;
+}
+
+/** One activity row. running = the move is in progress (spinner, no counts, not clickable yet). */
+function runLogRowHtml(mt, idx, running) {
+  if (running) {
     return `
+      <div class="rl-row is-live-row running" data-idx="${idx}">
+        <span class="rl-icon run" aria-hidden="true"></span>
+        <span class="rl-verb">Running move</span>
+        <span class="rl-name"><span class="rl-id">${esc(mt.move_id)}</span>${esc(mt.name)}</span>
+        <span class="rl-meta">working…</span>
+        <span class="rl-go"></span>
+      </div>`;
+  }
+  const c = actionCounts(mt);
+  const state = c.failed ? "fail" : "ok";
+  return `
       <button type="button" class="rl-row" data-idx="${idx}" title="Open ${esc(mt.move_id)} in the run panel">
         <span class="rl-icon ${state}">${state === "fail" ? ICONS.cross : ICONS.check}</span>
         <span class="rl-verb">Ran move</span>
@@ -933,10 +1080,6 @@ function renderRunLog(trace) {
         <span class="rl-meta">${c.executed}/${c.total} actions${c.skipped ? ` · ${c.skipped} skipped` : ""}${c.gates ? ` · ${c.gatesPassed}/${c.gates} gates` : ""}</span>
         <span class="rl-go">${ICONS.chevR}</span>
       </button>`;
-  }).join("");
-  list.querySelectorAll(".rl-row").forEach(row =>
-    row.addEventListener("click", () => openRunPanel(Number(row.dataset.idx))));
-  box.hidden = false;
 }
 
 /**

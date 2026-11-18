@@ -5,7 +5,7 @@
 (function () {
   const STEPS = [
     { el: "#uploadBtn", title: "Upload documents",
-      text: "Add a contract file as a new case. Only JSON (.json) files are supported for now." },
+      text: "Opens a panel to drop or browse a contract JSON file. After it uploads, press Run agent to generate the brief." },
     { el: "#caseSelect", title: "Or pick an existing case",
       text: "Every case already loaded is listed here. Choosing one generates its brief." },
     { el: "#asOfInput", title: "Assessment date",

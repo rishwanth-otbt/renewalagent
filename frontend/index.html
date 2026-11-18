@@ -28,42 +28,45 @@
     </div>
 
     <nav class="sb-nav">
-      <div class="sb-group-label">Workspace</div>
-
-      <div class="sb-parent">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-        <span class="sb-text">Renewal Brief</span>
-        <span class="info-tip" tabindex="0" role="img" aria-label="Everything for one vendor renewal: run the agent and read its decision brief." data-tip="Everything for one vendor renewal: run the agent and read its decision brief."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-      </div>
-      <div class="sb-sub">
-        <a class="sb-link active" href="index.html" aria-current="page" title="Generate Renewal Brief">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
-          <span class="sb-text">Generate Renewal Brief</span>
-          <span class="info-tip" tabindex="0" role="img" aria-label="Pick a case and a date, run the agent, and get the executive decision brief." data-tip="Pick a case and a date, run the agent, and get the executive decision brief."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-        </a>
-        <div class="sb-sections" id="sbSections" hidden>
-          <a class="sb-section-link" href="#executiveSummaryBanner"><span class="dot"></span>Executive summary</a>
-          <a class="sb-section-link" href="#sec-financials"><span class="dot"></span>Financial impact</a>
-          <a class="sb-section-link" href="#sec-history"><span class="dot"></span>Renewal history</a>
-          <a class="sb-section-link" href="#sec-performance"><span class="dot"></span>Vendor performance</a>
-          <a class="sb-section-link" href="#sec-risks"><span class="dot"></span>Risks &amp; governance</a>
-          <a class="sb-section-link" href="#sec-options"><span class="dot"></span>Options &amp; negotiation</a>
-          <a class="sb-section-link" href="#sec-plan"><span class="dot"></span>Renewal plan</a>
-        </div>
-      </div>
-
       <div class="sb-group-label">Tools</div>
-      <button type="button" class="sb-link" id="uploadBtn" title="Upload documents">
+      <button type="button" class="sb-link is-open" id="uploadBtn" title="Upload documents" aria-expanded="true" aria-controls="sbUpload" data-keep-open>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <span class="sb-text">Upload documents<span class="sb-star" aria-hidden="true">*</span></span>
         <span class="info-tip" tabindex="0" role="img" aria-label="Add a contract as a new case. Only JSON (.json) files are supported." data-tip="Add a contract as a new case. Only JSON (.json) files are supported.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         </span>
       </button>
-      <button type="button" class="sb-link" id="tourBtn" title="Take a tour">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-        <span class="sb-text">Take a tour</span>
-        <span class="info-tip" tabindex="0" role="img" aria-label="A 1-minute walk through this page, step by step." data-tip="A 1-minute walk through this page, step by step."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+
+      <!-- Upload panel: open by default; closes by itself once the upload succeeds, reopens when the file is removed. -->
+      <div class="sb-upload" id="sbUpload">
+        <div class="sb-upload-head">
+          <span class="sb-upload-title">Contract file</span>
+          <span class="sb-upload-hint">One JSON file</span>
+        </div>
+        <div class="sb-drop" id="sbDrop" role="button" tabindex="0" aria-label="Drop a contract JSON file here, or press to browse">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="sb-drop-text">Drop <strong>contract .json</strong> here or <span class="sb-browse">browse</span></span>
+        </div>
+        <p class="sb-upload-note" id="sbUploadNote">MSA, SLA, usage and pricing details all in one file for now.</p>
+      </div>
+
+      <!-- Uploaded file, waiting for Run -->
+      <div class="sb-file" id="sbFile" hidden>
+        <span class="sb-file-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        </span>
+        <span class="sb-file-main">
+          <span class="sb-file-name" id="sbFileName">—</span>
+          <span class="sb-file-sub" id="sbFileSub">Ready to run</span>
+        </span>
+        <button type="button" class="sb-file-x" id="sbFileClear" aria-label="Remove this file" title="Remove this file" data-keep-open>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <button type="button" class="sb-run" id="sbRunBtn" disabled title="Upload a contract first">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+        <span class="sb-text">Run agent</span>
       </button>
 
       <!-- POLICY DISABLED for this version
@@ -75,17 +78,6 @@
       -->
     </nav>
 
-    <!-- Current brief at a glance (filled by app.js) -->
-    <div class="sb-case-card" id="sbCaseCard" hidden>
-      <div class="sb-case-label">Current brief</div>
-      <div class="sb-case-vendor" id="sbCaseVendor">—</div>
-      <div class="sb-case-service" id="sbCaseService"></div>
-      <span class="sb-decision" id="sbCaseDecision">—</span>
-      <div class="sb-case-meta">
-        <span id="sbCaseNotice"></span>
-        <!-- <span id="sbCasePolicy"></span>  POLICY DISABLED -->
-      </div>
-    </div>
 
     <div class="sb-footer">
       <span id="sbCaseCount">— cases</span>
@@ -187,7 +179,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         </span>
         <span class="start-title">Upload documents</span>
-        <span class="start-text">Add a contract file as a new case. The brief is generated straight away.</span>
+        <span class="start-text">Add a contract file in the left panel, then press Run agent.</span>
         <span class="start-note">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           Only JSON (.json) files are supported
@@ -202,7 +194,6 @@
         <div class="start-cases" id="startCases"><span class="start-text">Loading cases…</span></div>
       </div>
     </div>
-    <p class="start-tour">New here? <button type="button" class="link-btn" id="startTourBtn">Take a 1-minute tour</button></p>
   </section>
 
   <!-- Main Executive Brief Container (Printable One-Page / Formatted Layout) -->
@@ -590,6 +581,5 @@
   <script src="notify.js"></script>
   <script src="app.js"></script>
   <script src="shell.js"></script>
-  <script src="tour.js"></script>
 </body>
 </html>

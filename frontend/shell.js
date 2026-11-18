@@ -9,7 +9,9 @@
   // Desktop: collapse the sidebar to an icon strip. Remembered per browser.
   const COLLAPSE_KEY = "renewalDesk.sidebarCollapsed";
   const collapseBtn = document.getElementById("sbCollapse");
-  const setCollapsed = (on) => {
+  // remember=false: collapse for now only (e.g. when a run starts), so the next visit
+  // still opens with the sidebar and its upload panel showing.
+  const setCollapsed = (on, remember = true) => {
     shell.classList.toggle("sb-collapsed", on);
     if (collapseBtn) {
       collapseBtn.setAttribute("aria-expanded", String(!on));
@@ -17,8 +19,10 @@
       collapseBtn.setAttribute("aria-label", label);
       collapseBtn.title = label;
     }
+    if (!remember) return;
     try { localStorage.setItem(COLLAPSE_KEY, on ? "1" : "0"); } catch (_) { /* storage blocked: fine */ }
   };
+  window.collapseSidebar = () => setCollapsed(true, false);
   let startCollapsed = false;
   try { startCollapsed = localStorage.getItem(COLLAPSE_KEY) === "1"; } catch (_) { /* default open */ }
   setCollapsed(startCollapsed);
@@ -36,7 +40,8 @@
   const close = () => shell.classList.remove("sb-open");
   document.getElementById("sbToggle")?.addEventListener("click", () => shell.classList.toggle("sb-open"));
   document.getElementById("sbBackdrop")?.addEventListener("click", close);
-  document.querySelectorAll(".sidebar a, .sidebar button").forEach(el => el.addEventListener("click", close));
+  // Buttons marked data-keep-open (upload panel controls) leave the mobile sidebar open.
+  document.querySelectorAll(".sidebar a, .sidebar button:not([data-keep-open])").forEach(el => el.addEventListener("click", close));
   document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
 
   // Scroll-spy: highlight the brief section currently in view.
