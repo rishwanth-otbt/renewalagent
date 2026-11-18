@@ -31,6 +31,7 @@ const fmtPct = (val) => {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
+  renderMovePipeline([]);
   loadCaseList();
 });
 
@@ -55,22 +56,37 @@ function setupEventListeners() {
   const closeFlowModalBtn = document.getElementById("closeFlowModalBtn");
   const moveFlowModal = document.getElementById("moveFlowModal");
 
-  caseSelect.addEventListener("change", (e) => {
-    if (e.target.value) {
-      loadCaseBrief(e.target.value);
-    }
-  });
+  // Changing an input does not run the pipeline; it only flags "Generate brief".
+  caseSelect.addEventListener("change", markInputsChanged);
 
   const asOfInput = document.getElementById("asOfInput");
   if (asOfInput) {
-    asOfInput.addEventListener("change", () => {
-      if (caseSelect.value) loadCaseBrief(caseSelect.value);
-    });
+    asOfInput.addEventListener("change", markInputsChanged);
   }
 
   reloadBtn.addEventListener("click", () => {
     if (caseSelect.value) {
-      loadCaseBrief(caseSelect.value);
+      generateBrief(caseSelect.value);
+    } else {
+      caseSelect.focus();
+      caseSelect.scrollIntoView({ block: "center", behavior: "smooth" });
+      const field = caseSelect.closest(".field");
+      let hint = document.getElementById("caseHint");
+      if (!hint && field) {
+        hint = document.createElement("span");
+        hint.id = "caseHint";
+        hint.className = "field-hint";
+        hint.textContent = "Pick a case first, then press Generate brief.";
+        field.appendChild(hint);
+      }
+      caseSelect.classList.remove("needs-choice");
+      void caseSelect.offsetWidth; // restart the animation on repeated clicks
+      caseSelect.classList.add("needs-choice");
+      clearTimeout(caseSelect._hintTimer);
+      caseSelect._hintTimer = setTimeout(() => {
+        caseSelect.classList.remove("needs-choice");
+        hint?.remove();
+      }, 3500);
     }
   });
 
@@ -102,13 +118,27 @@ function setupEventListeners() {
     uploadBtn.addEventListener("click", () => {
       fileUploadInput.click();
     });
+    document.getElementById("startUploadBtn")?.addEventListener("click", () => fileUploadInput.click());
+    // The info icon inside the upload button only explains; it does not open the file picker.
+    uploadBtn.querySelector(".info-tip")?.addEventListener("click", (e) => e.stopPropagation());
 
     fileUploadInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       try {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
+        if (!/\.json$/i.test(file.name)) {
+          notify({ type: "error", title: "Only JSON files are supported", file: file.name,
+                   message: "Choose a contract saved as a .json file." });
+          return;
+        }
+        let parsed;
+        try {
+          parsed = JSON.parse(await file.text());
+        } catch (_) {
+          notify({ type: "error", title: "This file isn't valid JSON", file: file.name,
+                   message: "Check the file opens as JSON and try again." });
+          return;
+        }
 
         // Upload custom contract JSON to backend
         const res = await fetch(`${API_BASE}/api/upload`, {
@@ -121,17 +151,32 @@ function setupEventListeners() {
           throw new Error(errData.detail || "Server rejected JSON file");
         }
         const resp = await res.json();
-        alert(`Uploaded "${resp.original_filename}" as ${resp.case_id} (${resp.renewal_id})`);
+        notify({ type: "success", title: "Document uploaded",
+                 file: resp.display_name || resp.original_filename,
+                 message: "Added as a new case. Generating its brief now." });
 
         // Refresh case list and immediately display the uploaded case
         await loadCaseList(resp.case_id);
       } catch (err) {
-        alert(`Error uploading JSON: ${err.message}`);
+        const [summary, list] = splitProblems(err.message);
+        notify({ type: "error", title: "Upload failed", file: file.name, message: summary, details: list });
       } finally {
         fileUploadInput.value = "";
       }
     });
   }
+}
+
+/**
+ * Server errors look like "Summary: problem one; problem two". Split them so the
+ * notification can show the summary and the problems as a list.
+ */
+function splitProblems(message = "") {
+  const text = String(message);
+  const i = text.indexOf(": ");
+  if (i === -1) return [text, []];
+  const list = text.slice(i + 2).split(";").map((p) => p.trim()).filter(Boolean);
+  return list.length > 1 ? [text.slice(0, i) + ".", list] : [text, []];
 }
 
 /**
@@ -144,38 +189,127 @@ async function loadCaseList(preferredCaseId = null) {
     if (!res.ok) throw new Error("Failed to load cases");
     const data = await res.json();
     
-    caseSelect.innerHTML = "";
-    if (data.cases && data.cases.length > 0) {
-      data.cases.forEach((c) => {
+    caseSelect.innerHTML = '<option value="">Select a case to evaluate…</option>';
+    const countEl = document.getElementById("sbCaseCount");
+    if (countEl) {
+      const n = (data.cases || []).length;
+      countEl.textContent = `${n} case${n === 1 ? "" : "s"} available`;
+    }
+    // Each case: its id plus the name to show (the uploaded file's own name for uploads).
+    const items = data.items || (data.cases || []).map((c) => ({ id: c, name: c.replace(/_/g, " ") }));
+    if (items.length > 0) {
+      items.forEach(({ id, name }) => {
         const opt = document.createElement("option");
-        opt.value = c;
-        opt.textContent = c.replace(/_/g, " ").toUpperCase();
+        opt.value = id;
+        opt.textContent = name;
         caseSelect.appendChild(opt);
       });
-      // Select the preferred case if provided, otherwise the first case
-      const targetCase = (preferredCaseId && data.cases.includes(preferredCaseId)) 
-        ? preferredCaseId 
-        : data.cases[0];
-      caseSelect.value = targetCase;
-      loadCaseBrief(targetCase);
+      renderStartCases(items);
+      // Only evaluate straight away when a case was asked for (e.g. just uploaded).
+      // Otherwise the start panel stays up until the user picks a case.
+      if (preferredCaseId && data.cases.includes(preferredCaseId)) {
+        caseSelect.value = preferredCaseId;
+        loadCaseBrief(preferredCaseId);
+      }
     } else {
       caseSelect.innerHTML = '<option value="">No cases found</option>';
+      renderStartCases([]);
     }
   } catch (err) {
     console.error("Error loading case list:", err);
     caseSelect.innerHTML = '<option value="">Cannot reach API (Is backend running?)</option>';
+    const box = document.getElementById("startCases");
+    if (box) box.innerHTML = '<span class="start-text">Cannot reach the API. Is the backend running?</span>';
   }
 }
 
 /**
- * Fetch executive brief generated by Kozmo Move Orchestrator
+ * Start panel: quick-pick buttons for the cases already loaded.
  */
-async function loadCaseBrief(caseId) {
+function renderStartCases(items) {
+  const box = document.getElementById("startCases");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!items.length) {
+    box.innerHTML = '<span class="start-text">No cases yet. Upload a contract to begin.</span>';
+    return;
+  }
+  const MAX = 6;
+  items.slice(0, MAX).forEach(({ id, name }) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "case-chip";
+    b.textContent = name;
+    b.title = name;
+    b.addEventListener("click", () => {
+      document.getElementById("caseSelect").value = id;
+      markInputsChanged();
+    });
+    box.appendChild(b);
+  });
+  if (items.length > MAX) {
+    const more = document.createElement("span");
+    more.className = "start-more";
+    more.textContent = `+${items.length - MAX} more in the list above`;
+    box.appendChild(more);
+  }
+}
+
+/**
+ * Swap the start panel for the brief once a case has been evaluated.
+ */
+function showBrief() {
+  document.getElementById("startPanel")?.setAttribute("hidden", "");
+  document.getElementById("briefContainer")?.removeAttribute("hidden");
+  document.getElementById("sbSections")?.removeAttribute("hidden");
+  const printBtn = document.getElementById("printBtn");
+  if (printBtn) { printBtn.disabled = false; printBtn.title = "Export as PDF / Print"; }
+}
+
+/**
+ * Case or date changed: highlight "Generate brief" until the user clicks it.
+ */
+function markInputsChanged() {
+  const caseSelect = document.getElementById("caseSelect");
+  const reloadBtn = document.getElementById("reloadBtn");
+  caseSelect.classList.remove("needs-choice");
+  reloadBtn.classList.toggle("needs-generate", !!caseSelect.value);
+}
+
+const MIN_LOADING_MS = 1000;
+
+/**
+ * "Generate brief" click: spinner on the button for at least 1 second, then show the brief.
+ */
+async function generateBrief(caseId) {
+  const reloadBtn = document.getElementById("reloadBtn");
+  reloadBtn.classList.remove("needs-generate");
+  reloadBtn.classList.add("is-generating");
+  reloadBtn.disabled = true;
+  try {
+    await loadCaseBrief(caseId, MIN_LOADING_MS);
+  } finally {
+    reloadBtn.classList.remove("is-generating");
+    reloadBtn.disabled = false;
+  }
+}
+
+/**
+ * Fetch executive brief generated by Kozmo Move Orchestrator.
+ * minMs: keep the loading state at least this long before rendering.
+ */
+async function loadCaseBrief(caseId, minMs = 0) {
   renderPipelineRunning();
+  const briefEl = document.getElementById("briefContainer");
+  briefEl?.classList.add("is-loading");
+  const minDelay = new Promise((resolve) => setTimeout(resolve, minMs));
   try {
     const asOf = document.getElementById("asOfInput")?.value;
     const query = asOf ? `?as_of=${encodeURIComponent(asOf)}` : "";
-    const res = await fetch(`${API_BASE}/api/case/${encodeURIComponent(caseId)}${query}`);
+    const [res] = await Promise.all([
+      fetch(`${API_BASE}/api/case/${encodeURIComponent(caseId)}${query}`),
+      minDelay,
+    ]);
     if (!res.ok) {
       const errData = await res.json();
       throw new Error(errData.detail || "Error evaluating case");
@@ -188,9 +322,13 @@ async function loadCaseBrief(caseId) {
     // Render the Kozmo Move pipeline bar
     renderMovePipeline(currentMoveTrace);
     renderBrief(brief);
+    showBrief();
   } catch (err) {
     console.error("Error evaluating brief:", err);
-    alert(`Orchestrator execution error: ${err.message}`);
+    const [summary, list] = splitProblems(err.message);
+    notify({ type: "error", title: "Couldn't generate the brief", message: summary, details: list });
+  } finally {
+    briefEl?.classList.remove("is-loading");
   }
 }
 
@@ -207,7 +345,7 @@ function renderMovePipeline(moveTrace) {
 
   movesToShow.forEach((mt, idx) => {
     const stepEl = document.createElement("span");
-    stepEl.className = "pipe-step active";
+    stepEl.className = mt.status === "PENDING" ? "pipe-step" : "pipe-step active";
 
     // Count executed vs skipped actions
     const actions = mt.actions || [];
@@ -215,13 +353,14 @@ function renderMovePipeline(moveTrace) {
     const skipped = actions.filter(a => a.status === "SKIPPED").length;
 
     stepEl.textContent = mt.move_id;
-    stepEl.title = `${mt.name} — ${executed} executed, ${skipped} skipped`;
+    stepEl.title = mt.status === "PENDING" ? `${mt.name} — not run yet`
+      : `${mt.name} — ${executed} executed, ${skipped} skipped`;
     container.appendChild(stepEl);
 
     if (idx < movesToShow.length - 1) {
       const arrow = document.createElement("span");
       arrow.className = "pipe-arrow";
-      arrow.textContent = "➔";
+      arrow.textContent = "›";
       container.appendChild(arrow);
     }
   });
@@ -335,7 +474,8 @@ function renderBrief(data) {
     driversEl.append(title, ul);
   }
 
-  renderRuleChecks(meta);
+  // renderRuleChecks(meta);  // POLICY DISABLED for this version
+  renderSidebarCase(meta, vendor, rec);
 
   // 2. Section 1: Financial Impact
   const finTableBody = document.querySelector("#financialTable tbody");
@@ -563,8 +703,30 @@ function renderBrief(data) {
 
 
 /**
- * Rule-check strip: the policy rules that decided the label, with this case's values.
+ * Sidebar "Current brief" card: vendor, decision and policy at a glance.
  */
+function renderSidebarCase(meta, vendor, rec) {
+  const card = document.getElementById("sbCaseCard");
+  if (!card) return;
+  card.hidden = false;
+  document.getElementById("sbCaseVendor").textContent = vendor.name || "—";
+  document.getElementById("sbCaseService").textContent = vendor.service || "";
+  const decision = document.getElementById("sbCaseDecision");
+  const primary = rec.primary || "—";
+  const low = primary.toLowerCase();
+  decision.textContent = primary;
+  decision.className = `sb-decision${low.includes("renew") ? " renew" : low.includes("switch") ? " switch" : ""}`;
+  document.getElementById("sbCaseNotice").textContent = meta.notice_deadline ? `Notice by ${meta.notice_deadline}` : "";
+  // POLICY DISABLED for this version
+  // document.getElementById("sbCasePolicy").textContent = meta.policy_version === 0 ? "Default policy"
+  //   : meta.policy_version == null ? "Draft policy" : `Policy v${meta.policy_version}`;
+}
+
+
+/* POLICY DISABLED for this version: rule-check strip commented out.
+/**
+ * Rule-check strip: the policy rules that decided the label, with this case's values.
+ * /
 function renderRuleChecks(meta) {
   const strip = document.getElementById("ruleCheckStrip");
   const notice = document.getElementById("policyNotice");
@@ -601,6 +763,7 @@ function renderRuleChecks(meta) {
   strip.innerHTML = "";
   strip.append(head, list, decided);
 }
+*/
 
 
 // ===================================================================
@@ -692,12 +855,12 @@ function renderMoveDetail(index) {
     html += `<div class="gates-grid">`;
     gates.forEach(g => {
       const passClass = g.passed ? "gate-passed" : "gate-failed";
-      const passIcon = g.passed ? "✅" : "❌";
+      const passIcon = g.passed ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
       html += `
         <div class="gate-card ${passClass}">
           <div class="gate-header">
             <span class="gate-id">${g.id}</span>
-            <span class="gate-icon">${passIcon}</span>
+            <span class="gate-icon ${g.passed ? 'pass' : 'fail'}" title="${g.passed ? 'Passed' : 'Failed'}">${passIcon}</span>
           </div>
           <div class="gate-name">${g.name}</div>
           <div class="gate-decision">${g.decision}</div>
@@ -714,7 +877,7 @@ function renderMoveDetail(index) {
     actions.forEach(a => {
       const isExecuted = a.status === "EXECUTED";
       const statusClass = isExecuted ? "executed" : "skipped";
-      const statusIcon = isExecuted ? "🟢" : "⚪";
+      const statusIcon = `<span class="status-dot ${statusClass}" title="${isExecuted ? "Executed" : "Skipped"}"></span>`;
       const durationStr = isExecuted && a.duration_ms ? `${a.duration_ms.toFixed(1)}ms` : "";
 
       html += `

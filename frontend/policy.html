@@ -3,81 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renewal Policy — Settings</title>
+  <title>Renewal Policy · Renewal Desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="app-shell">
 
-  <header class="top-nav">
-    <div class="nav-container">
-      <div class="nav-brand">
-        <span class="agent-icon">⚡</span>
-        <strong>Renewal Intelligence Agent</strong>
-        <span class="poc-badge">Policy</span>
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sb-brand" href="index.html">
+      <span class="sb-logo" aria-label="Kozmo">K</span>
+      <span>
+        <span class="sb-brand-name">Renewal Desk</span>
+        <span class="sb-brand-sub">Renewal intelligence</span>
+      </span>
+    </a>
+
+    <nav class="sb-nav">
+      <div class="sb-group-label">Workspace</div>
+
+      <div class="sb-parent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        <span>Renewal Brief</span>
       </div>
-      <div class="nav-controls">
-        <a class="nav-link-btn" href="index.html">← Back to brief</a>
-        <button id="wizardBtn" title="Answer the key questions step by step">🧭 Setup wizard</button>
+      <div class="sb-sub">
+        <a class="sb-link" href="index.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          <span>Generate Renewal Brief</span>
+        </a>
       </div>
+
+      <div class="sb-group-label">Settings</div>
+      <a class="sb-link active" href="policy.html" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        <span>Renewal Policy</span>
+      </a>
+      <button type="button" class="sb-link" id="wizardBtn" title="Answer the key questions step by step">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        <span>Setup wizard</span>
+      </button>
+    </nav>
+
+    <div class="sb-footer">
+      <span>Renewal policy</span>
+      <span>POC 2</span>
     </div>
-  </header>
+  </aside>
+  <div class="sb-backdrop" id="sbBackdrop"></div>
 
-  <main class="policy-page">
-    <section class="policy-head">
+  <!-- ============ Main ============ -->
+  <div class="app-main">
+
+    <div class="mobile-bar">
+      <button type="button" class="icon-btn" id="sbToggle" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <strong>Renewal Desk</strong>
+    </div>
+
+    <header class="page-header">
       <div>
-        <h1>Renewal Policy</h1>
-        <p class="subtitle">The rules the agent uses to decide Renew, Renegotiate or Switch. Changing a value here changes results — no code change.</p>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <span>Renewal Desk</span><span class="sep">/</span>
+          <span>Settings</span><span class="sep">/</span>
+          <span class="current">Renewal Policy</span>
+        </nav>
+        <h1 class="page-title">Renewal Policy</h1>
+        <p class="page-subtitle">The rules the agent uses to decide Renew, Renegotiate or Switch. Changing a value here changes results — no code change.</p>
       </div>
       <div class="policy-version-box" id="versionBox">Loading…</div>
-    </section>
+    </header>
 
-    <div class="policy-layout">
-      <form id="policyForm" class="policy-form" autocomplete="off">
-        <!-- Groups rendered by policy.js -->
-      </form>
+    <main class="policy-page">
+      <div class="policy-layout">
+        <form id="policyForm" class="policy-form" autocomplete="off">
+          <!-- Groups rendered by policy.js -->
+        </form>
 
-      <aside class="policy-side">
-        <div class="policy-card">
-          <h3>Impact preview</h3>
-          <p class="policy-muted">Every stored case run with the saved policy vs. your draft. Nothing is saved.</p>
-          <label class="policy-inline">As of
-            <input type="date" id="previewAsOf">
-          </label>
-          <div id="previewSummary" class="policy-muted">Change a value to see its impact.</div>
-          <table class="data-table policy-preview-table" id="previewTable">
-            <thead><tr><th>Case</th><th>Saved policy</th><th>Draft</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div class="policy-card">
-          <h3>Save as new version</h3>
-          <label class="policy-field-label" for="savedBy">Your name</label>
-          <input type="text" id="savedBy" class="policy-text" placeholder="e.g. Procurement lead" maxlength="80">
-          <label class="policy-field-label" for="saveNote">Note (optional)</label>
-          <input type="text" id="saveNote" class="policy-text" placeholder="Why this change?" maxlength="200">
-          <div id="policyErrors" class="policy-errors" hidden></div>
-          <div class="policy-actions">
-            <button type="button" id="resetDefaultsBtn">Reset to defaults</button>
-            <button type="button" id="saveBtn" class="btn-primary">💾 Save policy</button>
+        <aside class="policy-side">
+          <div class="policy-card">
+            <h3>Impact preview</h3>
+            <p class="policy-muted">Every stored case run with the saved policy vs. your draft. Nothing is saved.</p>
+            <label class="policy-inline">As of
+              <input type="date" id="previewAsOf">
+            </label>
+            <div id="previewSummary" class="policy-muted">Change a value to see its impact.</div>
+            <table class="data-table policy-preview-table" id="previewTable">
+              <thead><tr><th>Case</th><th>Saved policy</th><th>Draft</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
-          <div id="saveStatus" class="policy-muted"></div>
-        </div>
 
-        <div class="policy-card">
-          <h3>History</h3>
-          <ul id="historyList" class="policy-history"></ul>
-        </div>
-      </aside>
-    </div>
-  </main>
+          <div class="policy-card">
+            <h3>Save as new version</h3>
+            <label class="policy-field-label" for="savedBy">Your name</label>
+            <input type="text" id="savedBy" class="policy-text" placeholder="e.g. Procurement lead" maxlength="80">
+            <label class="policy-field-label" for="saveNote">Note (optional)</label>
+            <input type="text" id="saveNote" class="policy-text" placeholder="Why this change?" maxlength="200">
+            <div id="policyErrors" class="policy-errors" hidden></div>
+            <div class="policy-actions">
+              <button type="button" id="resetDefaultsBtn">Reset to defaults</button>
+              <button type="button" id="saveBtn" class="btn-primary">Save policy</button>
+            </div>
+            <div id="saveStatus" class="policy-muted"></div>
+          </div>
+
+          <div class="policy-card">
+            <h3>History</h3>
+            <ul id="historyList" class="policy-history"></ul>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
 
   <!-- First-run wizard -->
   <div id="wizardModal" class="flow-modal-backdrop" style="display: none;">
     <div class="flow-modal-dialog wizard-dialog">
       <div class="flow-modal-header">
         <div class="flow-modal-title">
-          <span class="icon">🧭</span>
           <h3 id="wizardTitle">Set up your renewal policy</h3>
         </div>
         <button id="closeWizardBtn" class="flow-modal-close" title="Close">&times;</button>
@@ -94,5 +142,6 @@
   </div>
 
   <script src="policy.js"></script>
+  <script src="shell.js"></script>
 </body>
 </html>

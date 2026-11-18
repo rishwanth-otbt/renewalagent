@@ -3,51 +3,201 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IT Vendor Renewal — Executive Decision Brief</title>
+  <title>Generate Renewal Brief · Renewal Desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="app-shell">
 
-  <!-- Top Action & Case Switcher Bar (Hidden when printing) -->
-  <header class="top-nav no-print">
-    <div class="nav-container">
-      <div class="nav-brand">
-        <span class="agent-icon">⚡</span>
-        <strong>Renewal Intelligence Agent</strong>
-        <span class="poc-badge">POC 2</span>
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar no-print" id="sidebar">
+    <div class="sb-top">
+      <a class="sb-brand" href="index.html" title="Renewal Desk">
+        <span class="sb-logo" aria-label="Kozmo">K</span>
+        <span class="sb-brand-text">
+          <span class="sb-brand-name">Renewal Desk</span>
+          <span class="sb-brand-sub">Renewal intelligence</span>
+        </span>
+      </a>
+      <button type="button" class="sb-collapse" id="sbCollapse" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-group-label">Workspace</div>
+
+      <div class="sb-parent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        <span class="sb-text">Renewal Brief</span>
+        <span class="info-tip" tabindex="0" role="img" aria-label="Everything for one vendor renewal: run the agent and read its decision brief." data-tip="Everything for one vendor renewal: run the agent and read its decision brief."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
       </div>
-      <div class="nav-controls">
-        <label for="caseSelect">Select Input Case:</label>
-        <select id="caseSelect">
-          <option value="">Loading cases...</option>
-        </select>
-        <label for="asOfInput" title="Assessment date (blank = today). Fix it for a repeatable demo.">As of:</label>
-        <input type="date" id="asOfInput">
-        <input type="file" id="fileUploadInput" accept=".json" style="display: none;">
-        <button id="uploadBtn" title="Upload Contract JSON">📁 Upload</button>
-        <button id="flowModalBtn" title="View Kozmo Move Execution Graph">🔀 View Move Flow</button>
-        <a class="nav-link-btn" href="policy.html" title="Renewal policy: the rules behind every decision">⚙️ Policy</a>
-        <button id="reloadBtn" title="Run State Machine Again">🔄 Re-evaluate</button>
-        <button id="printBtn" class="btn-primary" title="Export as PDF / Print">🖨️ Export PDF</button>
+      <div class="sb-sub">
+        <a class="sb-link active" href="index.html" aria-current="page" title="Generate Renewal Brief">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          <span class="sb-text">Generate Renewal Brief</span>
+          <span class="info-tip" tabindex="0" role="img" aria-label="Pick a case and a date, run the agent, and get the executive decision brief." data-tip="Pick a case and a date, run the agent, and get the executive decision brief."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+        </a>
+        <div class="sb-sections" id="sbSections" hidden>
+          <a class="sb-section-link" href="#executiveSummaryBanner"><span class="dot"></span>Executive summary</a>
+          <a class="sb-section-link" href="#sec-financials"><span class="dot"></span>Financial impact</a>
+          <a class="sb-section-link" href="#sec-history"><span class="dot"></span>Renewal history</a>
+          <a class="sb-section-link" href="#sec-performance"><span class="dot"></span>Vendor performance</a>
+          <a class="sb-section-link" href="#sec-risks"><span class="dot"></span>Risks &amp; governance</a>
+          <a class="sb-section-link" href="#sec-options"><span class="dot"></span>Options &amp; negotiation</a>
+          <a class="sb-section-link" href="#sec-plan"><span class="dot"></span>Renewal plan</a>
+        </div>
+      </div>
+
+      <div class="sb-group-label">Tools</div>
+      <button type="button" class="sb-link" id="uploadBtn" title="Upload documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span class="sb-text">Upload documents<span class="sb-star" aria-hidden="true">*</span></span>
+        <span class="info-tip" tabindex="0" role="img" aria-label="Add a contract as a new case. Only JSON (.json) files are supported." data-tip="Add a contract as a new case. Only JSON (.json) files are supported.">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </span>
+      </button>
+      <button type="button" class="sb-link" id="flowModalBtn" title="Move flow trace">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        <span class="sb-text">Move flow trace</span>
+        <span class="info-tip" tabindex="0" role="img" aria-label="See every step the agent ran for this brief: which checks (gates) passed and which actions ran or were skipped." data-tip="See every step the agent ran for this brief: which checks (gates) passed and which actions ran or were skipped."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </button>
+      <button type="button" class="sb-link" id="tourBtn" title="Take a tour">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        <span class="sb-text">Take a tour</span>
+        <span class="info-tip" tabindex="0" role="img" aria-label="A 1-minute walk through this page, step by step." data-tip="A 1-minute walk through this page, step by step."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </button>
+
+      <!-- POLICY DISABLED for this version
+      <div class="sb-group-label">Settings</div>
+      <a class="sb-link" href="policy.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        <span>Renewal Policy</span>
+      </a>
+      -->
+    </nav>
+
+    <!-- Current brief at a glance (filled by app.js) -->
+    <div class="sb-case-card" id="sbCaseCard" hidden>
+      <div class="sb-case-label">Current brief</div>
+      <div class="sb-case-vendor" id="sbCaseVendor">—</div>
+      <div class="sb-case-service" id="sbCaseService"></div>
+      <span class="sb-decision" id="sbCaseDecision">—</span>
+      <div class="sb-case-meta">
+        <span id="sbCaseNotice"></span>
+        <!-- <span id="sbCasePolicy"></span>  POLICY DISABLED -->
       </div>
     </div>
-  </header>
 
-  <!-- State Machine Pipeline Bar (Hidden when printing) -->
-  <div class="pipeline-container no-print">
-    <div class="pipeline-title">Kozmo Move Pipeline Audit:</div>
-    <div id="statePipeline" class="pipeline-steps">
-      <!-- Injected by app.js -->
+    <div class="sb-footer">
+      <span id="sbCaseCount">— cases</span>
+      <span>POC 2</span>
     </div>
-  </div>
+  </aside>
+  <div class="sb-backdrop no-print" id="sbBackdrop"></div>
 
-  <!-- Shown when no client policy has been saved yet -->
-  <div id="policyNotice" class="policy-notice no-print" hidden>
-    Using the built-in default policy. <a href="policy.html">Set up your renewal policy</a> so decisions follow your own rules.
-  </div>
+  <!-- ============ Main ============ -->
+  <div class="app-main">
+
+    <!-- Mobile top bar -->
+    <div class="mobile-bar no-print">
+      <button type="button" class="icon-btn" id="sbToggle" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <strong>Renewal Desk</strong>
+    </div>
+
+    <!-- Page header -->
+    <header class="page-header no-print">
+      <div>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <span>Renewal Desk</span><span class="sep">/</span>
+          <span>Renewal Brief</span><span class="sep">/</span>
+          <span class="current">Generate Renewal Brief</span>
+        </nav>
+        <h1 class="page-title">Generate Renewal Brief</h1>
+        <p class="page-subtitle">Pick a renewal case and an assessment date. The agent runs the move pipeline and drafts the executive decision brief below.</p>
+      </div>
+      <div class="page-actions">
+        <span class="info-tip" tabindex="0" role="img" aria-label="Save or print the current brief as a PDF. Available once a brief is generated." data-tip="Save or print the current brief as a PDF. Available once a brief is generated."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+        <button id="printBtn" class="btn-primary" title="Generate a brief first" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Brief controls -->
+    <section class="control-card no-print">
+      <div class="control-row">
+        <label class="field grow" for="caseSelect">
+          <span class="field-label">Renewal case <span class="info-tip tip-left" tabindex="0" role="img" aria-label="The vendor contract to assess. Use Upload documents to add a new one." data-tip="The vendor contract to assess. Use Upload documents to add a new one."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></span>
+          <select id="caseSelect">
+            <option value="">Loading cases…</option>
+          </select>
+        </label>
+        <label class="field" for="asOfInput" title="Assessment date (blank = today). Fix it for a repeatable demo.">
+          <span class="field-label">Assessment date <span class="info-tip tip-left" tabindex="0" role="img" aria-label="The date the brief treats as today, for deadlines and notice windows. Leave blank for today." data-tip="The date the brief treats as today, for deadlines and notice windows. Leave blank for today."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></span>
+          <input type="date" id="asOfInput">
+        </label>
+        <input type="file" id="fileUploadInput" accept=".json" hidden>
+        <div class="control-actions">
+          <button id="reloadBtn" class="btn-dark" title="Run the move pipeline again">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            Generate brief
+          </button>
+        </div>
+      </div>
+      <div class="pipeline-container">
+        <div class="pipeline-title">Move pipeline <span class="info-tip tip-left" tabindex="0" role="img" aria-label="The steps the agent runs, M01 to M10. A step turns green once it has run for this brief." data-tip="The steps the agent runs, M01 to M10. A step turns green once it has run for this brief."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></div>
+        <div id="statePipeline" class="pipeline-steps">
+          <!-- Injected by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- POLICY DISABLED for this version
+    Shown when no client policy has been saved yet
+    <div id="policyNotice" class="policy-notice no-print" hidden>
+      Using the built-in default policy. <a href="policy.html">Set up your renewal policy</a> so decisions follow your own rules.
+    </div>
+    -->
+
+  <!-- Start panel: shown until a case is evaluated -->
+  <section class="start-panel no-print" id="startPanel">
+    <div class="start-head">
+      <h2>Start a renewal brief</h2>
+      <p>Nothing is evaluated yet. Upload a contract, or evaluate a case that is already here.</p>
+    </div>
+    <div class="start-options">
+      <button type="button" class="start-option" id="startUploadBtn">
+        <span class="start-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </span>
+        <span class="start-title">Upload documents</span>
+        <span class="start-text">Add a contract file as a new case. The brief is generated straight away.</span>
+        <span class="start-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Only JSON (.json) files are supported
+        </span>
+      </button>
+      <div class="start-option as-card">
+        <span class="start-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+        </span>
+        <span class="start-title">Evaluate an existing case</span>
+        <span class="start-text">Pick one of the cases already loaded, or use the <strong>Renewal case</strong> list above.</span>
+        <div class="start-cases" id="startCases"><span class="start-text">Loading cases…</span></div>
+      </div>
+    </div>
+    <p class="start-tour">New here? <button type="button" class="link-btn" id="startTourBtn">Take a 1-minute tour</button></p>
+  </section>
 
   <!-- Main Executive Brief Container (Printable One-Page / Formatted Layout) -->
-  <main class="brief-container" id="briefContainer">
+  <main class="brief-container" id="briefContainer" hidden>
     
     <!-- Document Header / Meta -->
     <section class="doc-header">
@@ -114,21 +264,21 @@
 
     <!-- Executive Decision Rationale Alert Banner -->
     <section class="executive-summary-banner" id="executiveSummaryBanner">
-      <div class="banner-icon">📋</div>
+      <div class="banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></div>
       <div class="banner-body">
         <h3 id="execDecisionHeading">Executive Summary & Position</h3>
         <div id="execDecisionTags" class="decision-tags"></div>
         <p id="execDecisionRationale">Running state machine analysis...</p>
         <div id="execDecisionDrivers" class="decision-drivers"></div>
-        <div id="ruleCheckStrip" class="rule-strip"></div>
+        <!-- <div id="ruleCheckStrip" class="rule-strip"></div>  POLICY DISABLED -->
       </div>
     </section>
 
     <!-- SECTION 1: Financial Impact & Commercial Assessment -->
-    <section class="brief-section">
+    <section class="brief-section" id="sec-financials">
       <div class="section-header">
         <span class="section-num">1</span>
-        <h2>Financial Impact & Commercial Assessment</h2>
+        <h2>Financial Impact & Commercial Assessment <span class="info-tip tip-left" tabindex="0" role="img" aria-label="What the renewal costs now vs. proposed, the target to negotiate to, and the money at stake." data-tip="What the renewal costs now vs. proposed, the target to negotiate to, and the money at stake."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></h2>
       </div>
 
       <div class="two-column-layout">
@@ -179,10 +329,10 @@
     </section>
 
     <!-- SECTION 2: Historical Renewal Trend Comparison -->
-    <section class="brief-section">
+    <section class="brief-section" id="sec-history">
       <div class="section-header">
         <span class="section-num">2</span>
-        <h2>Historical Renewal Trend & Escalation Comparison</h2>
+        <h2>Historical Renewal Trend & Escalation Comparison <span class="info-tip tip-left" tabindex="0" role="img" aria-label="How this price increase compares with past renewals for the same vendor." data-tip="How this price increase compares with past renewals for the same vendor."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></h2>
       </div>
       <div class="history-container">
         <div class="history-metrics-bar">
@@ -222,10 +372,10 @@
     </section>
 
     <!-- SECTION 3: Vendor Performance & SLA Assessment -->
-    <section class="brief-section">
+    <section class="brief-section" id="sec-performance">
       <div class="section-header">
         <span class="section-num">3</span>
-        <h2>Vendor Performance & SLA Assessment</h2>
+        <h2>Vendor Performance & SLA Assessment <span class="info-tip tip-left" tabindex="0" role="img" aria-label="How the vendor did against its service levels (uptime, support, incidents) and the overall rating." data-tip="How the vendor did against its service levels (uptime, support, incidents) and the overall rating."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></h2>
         <span class="status-chip" id="perfOverallRating">Evaluating</span>
       </div>
 
@@ -257,10 +407,10 @@
     </section>
 
     <!-- SECTION 4: Risk Assessment & Governance Flags -->
-    <section class="brief-section">
+    <section class="brief-section" id="sec-risks">
       <div class="section-header">
         <span class="section-num">4</span>
-        <h2>Risk Assessment & Contract Governance</h2>
+        <h2>Risk Assessment & Contract Governance <span class="info-tip tip-left" tabindex="0" role="img" aria-label="Risks of renewing as proposed, how severe each is, and contract clauses to watch." data-tip="Risks of renewing as proposed, how severe each is, and contract clauses to watch."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></h2>
         <span class="status-chip" id="riskOverallLevel">Medium</span>
       </div>
 
@@ -295,10 +445,10 @@
     </section>
 
     <!-- SECTION 5: Renewal Recommendation & Strategic Options -->
-    <section class="brief-section">
+    <section class="brief-section" id="sec-options">
       <div class="section-header">
         <span class="section-num">5</span>
-        <h2>Strategic Renewal Options & Negotiation Objectives</h2>
+        <h2>Strategic Renewal Options & Negotiation Objectives <span class="info-tip tip-left" tabindex="0" role="img" aria-label="The options considered (renew, renegotiate, switch) and what to ask the vendor for." data-tip="The options considered (renew, renegotiate, switch) and what to ask the vendor for."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></h2>
       </div>
 
       <div class="two-column-layout">
@@ -331,10 +481,10 @@
     </section>
 
     <!-- SECTION 6: Operational Execution Timeline & Milestones -->
-    <section class="brief-section">
+    <section class="brief-section" id="sec-plan">
       <div class="section-header">
         <span class="section-num">6</span>
-        <h2>Operational Renewal Plan & Critical Milestones</h2>
+        <h2>Operational Renewal Plan & Critical Milestones <span class="info-tip tip-left" tabindex="0" role="img" aria-label="The steps, owners and dates to get the renewal done before the notice deadline." data-tip="The steps, owners and dates to get the renewal done before the notice deadline."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></h2>
         <span class="status-chip neutral" id="planDurationBadge">4–6 Weeks</span>
       </div>
 
@@ -372,7 +522,7 @@
     <section class="brief-section">
       <div class="section-header">
         <span class="section-num">7</span>
-        <h2>Recommended Further Investigations</h2>
+        <h2>Recommended Further Investigations <span class="info-tip tip-left" tabindex="0" role="img" aria-label="Open questions worth checking before the final decision." data-tip="Open questions worth checking before the final decision."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></h2>
       </div>
       <table class="data-table" id="furtherAnalysisTable">
         <thead>
@@ -391,7 +541,7 @@
     <!-- Document Footer -->
     <footer class="doc-footer">
       <div class="footer-left">
-        Generated by <strong>AI Renewal Intelligence Agent</strong> (POC 1) · Automated Decision Engine
+        Generated by <strong>Renewal Desk</strong> · Renewal Brief
       </div>
       <div class="footer-right">
         Confidential · For Internal Procurement & IT Leadership Use Only
@@ -400,12 +550,15 @@
 
   </main>
 
+  </div>
+</div>
+
   <!-- Kozmo Move Graph Execution Modal (Hidden by default) -->
   <div id="moveFlowModal" class="flow-modal-backdrop no-print" style="display: none;">
     <div class="flow-modal-dialog">
       <div class="flow-modal-header">
         <div class="flow-modal-title">
-          <span class="icon">🔀</span>
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span>
           <h3>Kozmo Renewal Desk — Move Graph Execution Trace</h3>
         </div>
         <button id="closeFlowModalBtn" class="flow-modal-close" title="Close modal">&times;</button>
@@ -426,6 +579,9 @@
     </div>
   </div>
 
+  <script src="notify.js"></script>
   <script src="app.js"></script>
+  <script src="shell.js"></script>
+  <script src="tour.js"></script>
 </body>
 </html>
