@@ -68,7 +68,8 @@ class MoveM03CheckRenewalDeadlines(BaseMove):
         # ----------------------------------------------------
         days = dossier.days_to_notice
         dossier.notice_passed = days < 0
-        is_imminent = 0 <= days <= 21
+        urgent_days = dossier.policy.deadlines.urgent_notice_days
+        is_imminent = 0 <= days <= urgent_days
         dossier.notice_at_risk = is_imminent
 
         if dossier.notice_passed:
@@ -76,7 +77,7 @@ class MoveM03CheckRenewalDeadlines(BaseMove):
             details = f"Notice cutoff passed {abs(days)} days ago ({dossier.notice_deadline})."
         elif is_imminent:
             notice_status = "IMMINENT_RISK"
-            details = f"{days} days remaining until notice cutoff."
+            details = f"{days} days remaining until notice cutoff (urgent within {urgent_days} days)."
         else:
             notice_status = "ADEQUATE_RUNWAY"
             details = f"{days} days remaining until notice cutoff."

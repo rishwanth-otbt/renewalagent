@@ -48,7 +48,7 @@ class Dossier:
     notice_deadline: Optional[str] = None
     notice_period_days: Optional[int] = None
     days_to_notice: Optional[int] = None
-    notice_at_risk: Optional[bool] = None      # 0..21 days left before the notice cutoff
+    notice_at_risk: Optional[bool] = None      # 0..policy.deadlines.urgent_notice_days left before the cutoff
     notice_passed: Optional[bool] = None       # notice cutoff is already in the past
     notice_status: Optional[str] = None        # ADEQUATE_RUNWAY | IMMINENT_RISK | NOTICE_WINDOW_CLOSED | AUTO_RENEWED_LOCK_IN
 
