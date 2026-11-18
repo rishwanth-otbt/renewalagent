@@ -58,7 +58,25 @@ The FastAPI app automatically mounts and serves the `frontend/` directory direct
 
 You can also open `frontend/index.html` directly in your browser.
 
-### 4. Adding New Test Contracts
+### 4. Renewal Policy
+
+Every decision threshold (renew limit, switch trigger, SLA rating limits, utilization target, notice window, ...)
+comes from the client's **renewal policy**, not from code. Open **⚙️ Policy** in the top bar to change it: the page
+shows each rule with its default, previews the impact on every stored case, and saves a new version
+(`backend/policies/policy_vNNN.json`). With nothing saved, the built-in defaults (version 0) apply and a first-run
+wizard asks the five key questions. Each brief shows the policy version and a rule-check strip explaining its label.
+
+### 5. Running Tests
+
+```bash
+cd backend
+python -m pytest -q
+```
+
+Golden tests pin the default-policy results of every stored case and valid sample at a fixed date.
+If a result change is intended, regenerate them with `python -m tests.make_golden`.
+
+### 6. Adding New Test Contracts
 
 Drop any new `.json` file conforming to the contract schema into `backend/data/`. Refresh the web interface, and it will immediately show up in the case selector dropdown for automated evaluation.
 

@@ -29,6 +29,7 @@ Case JSON ──► Validate ──► Dossier ──► Moves (in order) ──
 | **Action**     | A unit of logic inside a move. Recorded as **Executed**, **Skipped** (with a reason) or **Failed**.                                          |
 | **Gate**       | A decision point inside a move that decides which actions run next. Recorded with its decision and details.                                                    |
 | **Dossier**    | The shared fact record. Each move owns its own section.                                                                                                        |
+| **Policy**     | The client's renewal rules (`RenewalPolicy`): every threshold a move uses. Versioned in `backend/policies/`; defaults = built-in values (version 0). |
 | **Move Trace** | The audit record of every move, action and gate for one run.                                                                                                   |
 
 ## 5. Current moves
@@ -53,6 +54,7 @@ Case JSON ──► Validate ──► Dossier ──► Moves (in order) ──
 - **Deterministic** — same input and same assessment date always give the same result.
 - **No guessing** — required data must be present; nothing is defaulted. Unknown facts stay empty.
 - **Explainable** — every branch is a recorded gate; every skipped action states why.
+- **Policy-driven** — no decision threshold is written in a move; each comes from the policy, and the brief reports the policy version and the rule checks (`meta.rule_checks`, `meta.decided_by`) that set the label.
 - **Ordered** — a move may only use facts produced by moves before it. The recommending move runs last.
 - **Date-aware** — results depend on the assessment date, which defaults to today and can be fixed for repeatable runs.
 - **Lightweight** — Python + FastAPI backend; plain HTML/CSS/JS frontend with no frameworks or build step.
@@ -66,6 +68,10 @@ Case JSON ──► Validate ──► Dossier ──► Moves (in order) ──
 | `GET /api/case/{id}?as_of=YYYY-MM-DD` | Run a stored case and return brief + trace |
 | `POST /api/process`                   | Run a case sent in the request             |
 | `POST /api/upload`                    | Validate and store a new case              |
+| `GET /api/policy`                     | Current policy, defaults and field catalog |
+| `PUT /api/policy`                     | Save a new policy version (422 if invalid) |
+| `GET /api/policy/history`             | Saved policy versions, newest first        |
+| `POST /api/policy/preview`            | Run all cases with a draft policy, no save |
 
 The web UI shows the brief, lets the user switch or upload cases, view the Move Flow (trace), and print to PDF.
 
@@ -73,9 +79,11 @@ The web UI shows the brief, lets the user switch or upload cases, view the Move 
 
 ```
 backend/app/core/     framework: base move, dossier, orchestrator
-backend/app/models/   input schema
+backend/app/models/   input schema, renewal policy
 backend/app/moves/    one file per move
 backend/data/         stored cases
+backend/policies/     saved policy versions (runtime data, git-ignored)
+backend/tests/        golden, boundary, policy and API tests (pytest)
 backend/main.py       API + static hosting
 frontend/             UI
 sample_uploads/       test cases, named by expected result
