@@ -180,7 +180,11 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
             dossier.historical_avg_increase_pct = round(sum_increases / len(history), 1) if history else 0.0
             dossier.current_vs_avg_increase_pct = round(dossier.increase_pct - dossier.historical_avg_increase_pct, 1)
             dossier.previous_cycles = prev_cycles
-            return f"Past spend: {_fmt_usd(dossier.historical_spend_to_date)}, Avg increase: {dossier.historical_avg_increase_pct}% (Current ask is {dossier.current_vs_avg_increase_pct}% vs avg)"
+            diff = dossier.current_vs_avg_increase_pct
+            vs_avg = ("in line with the average" if diff == 0
+                      else f"{abs(diff)} percentage points {'above' if diff > 0 else 'below'} the average")
+            return (f"Past spend: {_fmt_usd(dossier.historical_spend_to_date)}, Avg increase: {dossier.historical_avg_increase_pct}% "
+                    f"(current ask of {dossier.increase_pct}% is {vs_avg})")
 
         self.execute_action("A2", "BenchmarkHistoricalTrends", action_a2)
 

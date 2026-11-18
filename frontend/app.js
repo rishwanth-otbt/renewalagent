@@ -344,6 +344,21 @@ function renderBrief(data) {
   const termDelta = (typeof proposedMonths === "number" && typeof currentMonths === "number") ? proposedMonths - currentMonths : null;
   const termDeltaStr = termDelta === null ? "—" : termDelta > 0 ? `+${termDelta} months extension` : (termDelta === 0 ? "Same duration" : `${termDelta} months`);
 
+  // Seat volume: proposed vs current (was fixed text "0% (Hold volume)")
+  let seatDeltaStr = "—";
+  if (seats.total != null && seats.proposed_seats != null) {
+    const change = seats.proposed_seats - seats.total;
+    const pct = seats.total ? Math.round((change / seats.total) * 1000) / 10 : 0;
+    seatDeltaStr = change === 0 ? "0% (Hold volume)"
+      : `${change > 0 ? "+" : "−"}${Math.abs(change).toLocaleString()} seats (${change > 0 ? "+" : "−"}${Math.abs(pct)}%)`;
+  }
+  // Per-seat price change with its real sign (was always "+")
+  let perSeatDeltaStr = "—";
+  if (seats.proposed_unit_price != null && seats.current_unit_price != null) {
+    const d = Math.round((seats.proposed_unit_price - seats.current_unit_price) * 100) / 100;
+    perSeatDeltaStr = d === 0 ? "No change" : `${d > 0 ? "+" : "−"}$${Math.abs(d).toLocaleString()} / seat`;
+  }
+
   finTableBody.innerHTML = `
     <tr>
       <td><strong>Annual Contract Value (ACV)</strong></td>
@@ -353,15 +368,15 @@ function renderBrief(data) {
     </tr>
     <tr>
       <td><strong>Provisioned License Quantity</strong></td>
-      <td>${seats.total?.toLocaleString()}</td>
-      <td>${seats.total?.toLocaleString()}</td>
-      <td>0% (Hold volume)</td>
+      <td>${seats.total?.toLocaleString() ?? "—"}</td>
+      <td>${seats.proposed_seats?.toLocaleString() ?? "—"}</td>
+      <td>${seatDeltaStr}</td>
     </tr>
     <tr>
       <td><strong>Average Per-Seat Cost (Annual)</strong></td>
       <td>$${seats.current_unit_price?.toLocaleString()}</td>
       <td>$${seats.proposed_unit_price?.toLocaleString()}</td>
-      <td>${(seats.proposed_unit_price != null && seats.current_unit_price != null) ? `+$${(seats.proposed_unit_price - seats.current_unit_price).toLocaleString()} / seat` : "—"}</td>
+      <td>${perSeatDeltaStr}</td>
     </tr>
     <tr>
       <td><strong>Contract Duration</strong></td>
@@ -399,8 +414,9 @@ function renderBrief(data) {
 
   // 3. Section 2: Historical Trend
   document.getElementById("histAvgIncrease").textContent = `${history.avg_historical_increase_pct}%`;
-  document.getElementById("histCurrentAsk").textContent = `${history.current_increase_pct}%`;
-  document.getElementById("histVsAvg").textContent = `${fmtPct(history.current_increase_vs_avg)}`;
+  document.getElementById("histCurrentAsk").textContent = fmtPct(fin.increase_pct);
+  const vsAvg = history.current_increase_vs_avg;
+  document.getElementById("histVsAvg").textContent = vsAvg == null ? "—" : `${vsAvg > 0 ? "+" : ""}${vsAvg} pts`;
   document.getElementById("histTotalSpend").textContent = fmtCurrency(history.total_spend_to_date);
 
   const histTableBody = document.querySelector("#historyTable tbody");
