@@ -4,9 +4,9 @@
  */
 
 // Robust API Base URL resolution:
-// If served by the FastAPI server, use relative path ("")
-// If opened via file:// or another local dev server port, use "http://localhost:8000"
-const API_BASE = (window.location.protocol.startsWith("http") && (window.location.port === "8000" || window.location.port === ""))
+// If served over HTTP (the FastAPI server, any port), use relative paths ("")
+// If opened via file://, use "http://localhost:8000"
+const API_BASE = window.location.protocol.startsWith("http")
   ? "" 
   : "http://localhost:8000";
 
@@ -335,6 +335,8 @@ function renderBrief(data) {
     driversEl.append(title, ul);
   }
 
+  renderRuleChecks(meta);
+
   // 2. Section 1: Financial Impact
   const finTableBody = document.querySelector("#financialTable tbody");
   const currentMonths = meta.current_term_months ?? '—';
@@ -418,36 +420,48 @@ function renderBrief(data) {
   perfRatingEl.className = `status-chip ${perf.overall_rating === 'Good' ? 'good' : 'high'}`;
 
   const perfTableBody = document.querySelector("#perfTable tbody");
+  // Targets come from the policy in force for this brief (meta.policy), not from fixed numbers.
+  const pp = (meta.policy || {}).performance || {};
+  const lp = (meta.policy || {}).licenses || {};
+  const chip = (cls, text) => `<span class="status-chip ${cls}">${text}</span>`;
+  const uptimeChip = perf.uptime_gap_pct <= (pp.good_uptime_gap ?? 0) ? chip("ok", "Met")
+    : perf.uptime_gap_pct > (pp.poor_uptime_gap ?? 0) ? chip("below", "Below Target") : chip("warn", "Slightly Below");
+  const slaChip = perf.support_sla_pct >= (pp.good_support_sla_pct ?? 0) ? chip("ok", "Met")
+    : perf.support_sla_pct < (pp.poor_support_sla_pct ?? 0) ? chip("below", "Sub-standard") : chip("warn", "Below Good");
+  const incChip = perf.critical_incidents <= (pp.good_max_incidents ?? 0)
+    ? chip("ok", perf.critical_incidents === 0 ? "Zero Outages (Met)" : "Met")
+    : perf.critical_incidents >= (pp.poor_incidents ?? Infinity) ? chip("below", "Requires Review") : chip("warn", "Above Good");
+  const utilTarget = lp.target_utilization_pct;
   perfTableBody.innerHTML = `
     <tr>
       <td>Service Availability (Uptime)</td>
       <td>${perf.uptime_contracted}%</td>
       <td><strong>${perf.uptime_actual}%</strong></td>
-      <td><span class="status-chip ${perf.uptime_gap_pct > 0.1 ? 'below' : 'ok'}">${perf.uptime_gap_pct > 0.1 ? 'Below Target' : 'Met'}</span></td>
+      <td>${uptimeChip}</td>
     </tr>
     <tr>
       <td>Support SLA Achievement</td>
-      <td>90.0%</td>
+      <td>${pp.good_support_sla_pct ?? "—"}%</td>
       <td><strong>${perf.support_sla_pct}%</strong></td>
-      <td><span class="status-chip ${perf.support_sla_pct < 85 ? 'below' : 'ok'}">${perf.support_sla_pct < 85 ? 'Sub-standard' : 'Met'}</span></td>
+      <td>${slaChip}</td>
     </tr>
     <tr>
       <td>Critical Production Incidents</td>
-      <td>0</td>
+      <td>≤ ${pp.good_max_incidents ?? "—"}</td>
       <td><strong>${perf.critical_incidents}</strong></td>
-      <td><span class="status-chip ${perf.critical_incidents > 0 ? 'below' : 'ok'}">${perf.critical_incidents > 0 ? 'Requires Review' : 'Zero Outages (Met)'}</span></td>
+      <td>${incChip}</td>
     </tr>
     <tr>
       <td>License Seat Utilization</td>
-      <td>90.0%</td>
+      <td>${utilTarget ?? "—"}%</td>
       <td><strong>${seats.utilization_pct}%</strong></td>
-      <td><span class="status-chip ${seats.utilization_pct >= 90 ? 'ok' : 'warn'}">${seats.utilization_pct >= 90 ? 'Optimal Adoption' : 'Optimization Target'}</span></td>
+      <td>${seats.utilization_pct >= utilTarget ? chip("ok", "Optimal Adoption") : chip("warn", "Optimization Target")}</td>
     </tr>
     <tr>
       <td>Roadmap Milestones Delivered</td>
       <td>${perf.roadmap_total} of ${perf.roadmap_total}</td>
       <td><strong>${perf.roadmap_delivered} of ${perf.roadmap_total}</strong></td>
-      <td><span class="status-chip ${perf.roadmap_delayed?.length > 0 ? 'below' : 'ok'}">${perf.roadmap_delayed?.length > 0 ? 'Delayed Delivery' : 'On Track'}</span></td>
+      <td>${chip(perf.roadmap_delayed?.length > 0 ? "below" : "ok", perf.roadmap_delayed?.length > 0 ? "Delayed Delivery" : "On Track")}</td>
     </tr>
   `;
 
@@ -529,6 +543,47 @@ function renderBrief(data) {
     `).join("");
   }
   */
+}
+
+
+/**
+ * Rule-check strip: the policy rules that decided the label, with this case's values.
+ */
+function renderRuleChecks(meta) {
+  const strip = document.getElementById("ruleCheckStrip");
+  const notice = document.getElementById("policyNotice");
+  if (notice) notice.hidden = meta.policy_version !== 0;
+  if (!strip) return;
+  const checks = meta.rule_checks || [];
+  if (!checks.length) { strip.innerHTML = ""; return; }
+
+  const version = meta.policy_version === 0 ? "built-in defaults (v0)"
+    : meta.policy_version == null ? "unsaved draft" : `version ${meta.policy_version}`;
+  const head = document.createElement("div");
+  head.className = "rule-strip-head";
+  head.innerHTML = `<span><strong>Policy rules</strong> · ${version}</span><a href="policy.html">Change policy →</a>`;
+
+  const list = document.createElement("div");
+  list.className = "rule-checks";
+  checks.forEach(c => {
+    const chip = document.createElement("span");
+    chip.className = `rule-check ${c.passed ? "" : "failed"}`.trim();
+    chip.title = `${c.group} rule (${c.id}): needs ${c.limit}; actual ${c.actual}`;
+    const icon = document.createTextNode(`${c.passed ? "✓" : "✗"} ${c.rule}: `);
+    const actual = document.createElement("span");
+    actual.className = "rc-actual";
+    actual.textContent = c.actual;
+    const limit = document.createTextNode(` (needs ${c.limit})`);
+    chip.append(icon, actual, limit);
+    list.appendChild(chip);
+  });
+
+  const decided = document.createElement("div");
+  decided.className = "rule-decided-by";
+  decided.textContent = meta.decided_by || "";
+
+  strip.innerHTML = "";
+  strip.append(head, list, decided);
 }
 
 

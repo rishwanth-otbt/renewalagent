@@ -1290,3 +1290,197 @@ button.btn-primary:hover {
   font-size: 10px;
   opacity: 0.8;
 }
+
+
+/* ==========================================================================
+   M1 — Policy: rule-check strip (brief) and settings page
+   ========================================================================== */
+
+.nav-link-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.nav-link-btn:hover { background: rgba(255, 255, 255, 0.25); }
+
+/* Default-policy notice above the brief */
+.policy-notice {
+  max-width: 1200px;
+  margin: 12px auto 0;
+  padding: 8px 14px;
+  border: 1px solid var(--amber-border);
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+.policy-notice a { color: inherit; font-weight: 600; }
+
+/* Rule-check strip under the decision */
+.rule-strip {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+}
+.rule-strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--slate-medium);
+  margin-bottom: 6px;
+}
+.rule-strip-head a { color: var(--blue-accent); text-decoration: none; }
+.rule-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rule-check {
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--green-border);
+  background: var(--green-bg);
+  color: var(--green-text);
+  cursor: default;
+}
+.rule-check.failed {
+  border-color: var(--red-border);
+  background: var(--red-bg);
+  color: var(--red-text);
+}
+.rule-check .rc-actual { font-weight: 600; }
+.rule-decided-by {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--slate-medium);
+}
+
+/* Settings page */
+.policy-page {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+.policy-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.policy-head h1 { font-size: 24px; color: var(--navy-dark); }
+.policy-head .subtitle { color: var(--slate-medium); }
+.policy-version-box {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  font-size: 13px;
+}
+.policy-version-box span { color: var(--slate-light); font-size: 12px; }
+.policy-version-box.warn { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
+.policy-version-box.warn span { color: var(--amber-text); }
+
+.policy-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.policy-form { display: flex; flex-direction: column; gap: 14px; }
+.policy-group, .policy-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.policy-group legend {
+  font-weight: 700;
+  color: var(--navy-primary);
+  padding: 0 6px;
+}
+.policy-card h3 { font-size: 15px; color: var(--navy-primary); margin-bottom: 4px; }
+.policy-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 64px; }
+.policy-muted { color: var(--slate-light); font-size: 12px; }
+.policy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 2px 12px;
+  padding: 8px 6px;
+  border-top: 1px solid var(--neutral-bg);
+  border-radius: var(--radius-sm);
+}
+.policy-row.changed { background: var(--blue-soft); }
+.policy-row .policy-help { grid-column: 1 / -1; color: var(--slate-light); font-size: 12px; }
+.policy-default { color: var(--amber-text); font-weight: 600; margin-left: 4px; }
+.policy-field-label { font-weight: 600; font-size: 13px; color: var(--slate-dark); align-self: center; }
+.policy-card .policy-field-label { display: block; margin-top: 8px; }
+.policy-page select, .policy-text, .policy-inline input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--neutral-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--slate-dark);
+  font-size: 13px;
+}
+.policy-inline { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--slate-medium); margin: 8px 0; }
+.policy-inline input { width: auto; }
+.policy-preview-table { margin-top: 8px; font-size: 12px; }
+.policy-preview-table tr.preview-changed td { background: #fff7ed; }
+
+.policy-page button, .wizard-dialog button:not(.flow-modal-close) {
+  border: 1px solid var(--neutral-border);
+  background: var(--neutral-bg);
+  color: var(--slate-dark);
+}
+.policy-page button:hover, .wizard-dialog button:not(.flow-modal-close):hover { background: #e2e8f0; }
+.policy-page button.btn-primary, .wizard-dialog button.btn-primary { background: var(--blue-accent); border-color: var(--blue-accent); color: #ffffff; }
+.policy-page button.btn-primary:hover, .wizard-dialog button.btn-primary:hover { background: #1d4ed8; }
+.policy-page button:disabled, .wizard-dialog button:disabled { opacity: 0.5; cursor: default; }
+.policy-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.policy-errors {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--red-border);
+  background: var(--red-bg);
+  color: var(--red-text);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+}
+.policy-errors ul { margin: 4px 0 0 16px; }
+.policy-history { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.policy-history li { padding-bottom: 8px; border-bottom: 1px solid var(--neutral-bg); }
+.policy-page button.link-btn { border: none; background: none; color: var(--blue-accent); padding: 2px 0; font-size: 12px; }
+
+/* Wizard */
+.wizard-dialog { max-width: 560px; }
+.wizard-progress { font-size: 12px; color: var(--slate-light); margin-bottom: 6px; }
+.wizard-question { font-size: 16px; color: var(--navy-dark); margin-bottom: 4px; }
+.wizard-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.wizard-dialog button.wizard-choice { display: flex; flex-direction: column; align-items: center; min-width: 84px; padding: 8px 12px; }
+.wizard-dialog button.wizard-choice.selected { background: var(--blue-soft); border-color: var(--blue-accent); color: var(--blue-accent); font-weight: 700; }
+.wizard-rec { font-size: 10px; font-weight: 600; color: var(--green-text); }
+
+@media screen and (max-width: 860px) {
+  .policy-layout { grid-template-columns: 1fr; }
+  .policy-side { position: static; }
+  .policy-head { flex-direction: column; }
+  .policy-row { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .rule-strip-head a { display: none; }
+}

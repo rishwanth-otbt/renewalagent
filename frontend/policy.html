@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renewal Policy — Settings</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="top-nav">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <span class="agent-icon">⚡</span>
+        <strong>Renewal Intelligence Agent</strong>
+        <span class="poc-badge">Policy</span>
+      </div>
+      <div class="nav-controls">
+        <a class="nav-link-btn" href="index.html">← Back to brief</a>
+        <button id="wizardBtn" title="Answer the key questions step by step">🧭 Setup wizard</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="policy-page">
+    <section class="policy-head">
+      <div>
+        <h1>Renewal Policy</h1>
+        <p class="subtitle">The rules the agent uses to decide Renew, Renegotiate or Switch. Changing a value here changes results — no code change.</p>
+      </div>
+      <div class="policy-version-box" id="versionBox">Loading…</div>
+    </section>
+
+    <div class="policy-layout">
+      <form id="policyForm" class="policy-form" autocomplete="off">
+        <!-- Groups rendered by policy.js -->
+      </form>
+
+      <aside class="policy-side">
+        <div class="policy-card">
+          <h3>Impact preview</h3>
+          <p class="policy-muted">Every stored case run with the saved policy vs. your draft. Nothing is saved.</p>
+          <label class="policy-inline">As of
+            <input type="date" id="previewAsOf">
+          </label>
+          <div id="previewSummary" class="policy-muted">Change a value to see its impact.</div>
+          <table class="data-table policy-preview-table" id="previewTable">
+            <thead><tr><th>Case</th><th>Saved policy</th><th>Draft</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="policy-card">
+          <h3>Save as new version</h3>
+          <label class="policy-field-label" for="savedBy">Your name</label>
+          <input type="text" id="savedBy" class="policy-text" placeholder="e.g. Procurement lead" maxlength="80">
+          <label class="policy-field-label" for="saveNote">Note (optional)</label>
+          <input type="text" id="saveNote" class="policy-text" placeholder="Why this change?" maxlength="200">
+          <div id="policyErrors" class="policy-errors" hidden></div>
+          <div class="policy-actions">
+            <button type="button" id="resetDefaultsBtn">Reset to defaults</button>
+            <button type="button" id="saveBtn" class="btn-primary">💾 Save policy</button>
+          </div>
+          <div id="saveStatus" class="policy-muted"></div>
+        </div>
+
+        <div class="policy-card">
+          <h3>History</h3>
+          <ul id="historyList" class="policy-history"></ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- First-run wizard -->
+  <div id="wizardModal" class="flow-modal-backdrop" style="display: none;">
+    <div class="flow-modal-dialog wizard-dialog">
+      <div class="flow-modal-header">
+        <div class="flow-modal-title">
+          <span class="icon">🧭</span>
+          <h3 id="wizardTitle">Set up your renewal policy</h3>
+        </div>
+        <button id="closeWizardBtn" class="flow-modal-close" title="Close">&times;</button>
+      </div>
+      <div class="flow-modal-body">
+        <div class="wizard-progress" id="wizardProgress"></div>
+        <div id="wizardStep"></div>
+        <div class="policy-actions">
+          <button type="button" id="wizardBackBtn">← Back</button>
+          <button type="button" id="wizardNextBtn" class="btn-primary">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="policy.js"></script>
+</body>
+</html>

@@ -26,6 +26,7 @@
         <input type="file" id="fileUploadInput" accept=".json" style="display: none;">
         <button id="uploadBtn" title="Upload Contract JSON">📁 Upload</button>
         <button id="flowModalBtn" title="View Kozmo Move Execution Graph">🔀 View Move Flow</button>
+        <a class="nav-link-btn" href="policy.html" title="Renewal policy: the rules behind every decision">⚙️ Policy</a>
         <button id="reloadBtn" title="Run State Machine Again">🔄 Re-evaluate</button>
         <button id="printBtn" class="btn-primary" title="Export as PDF / Print">🖨️ Export PDF</button>
       </div>
@@ -38,6 +39,11 @@
     <div id="statePipeline" class="pipeline-steps">
       <!-- Injected by app.js -->
     </div>
+  </div>
+
+  <!-- Shown when no client policy has been saved yet -->
+  <div id="policyNotice" class="policy-notice no-print" hidden>
+    Using the built-in default policy. <a href="policy.html">Set up your renewal policy</a> so decisions follow your own rules.
   </div>
 
   <!-- Main Executive Brief Container (Printable One-Page / Formatted Layout) -->
@@ -114,6 +120,7 @@
         <div id="execDecisionTags" class="decision-tags"></div>
         <p id="execDecisionRationale">Running state machine analysis...</p>
         <div id="execDecisionDrivers" class="decision-drivers"></div>
+        <div id="ruleCheckStrip" class="rule-strip"></div>
       </div>
     </section>
 
