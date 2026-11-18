@@ -7,11 +7,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 try:
-    from backend.state_machine import RenewalStateMachine
-    from backend.models import ProcessRequest, UploadCaseRequest
+    from backend.app.core.orchestrator import RenewalDeskOrchestrator
+    from backend.app.models.input_models import ProcessRequest, UploadCaseRequest
 except ImportError:
-    from state_machine import RenewalStateMachine
-    from models import ProcessRequest, UploadCaseRequest
+    try:
+        from app.core.orchestrator import RenewalDeskOrchestrator
+        from app.models.input_models import ProcessRequest, UploadCaseRequest
+    except ImportError:
+        RenewalDeskOrchestrator = None
+        try:
+            from backend.state_machine import RenewalStateMachine
+            from backend.models import ProcessRequest, UploadCaseRequest
+        except ImportError:
+            from state_machine import RenewalStateMachine
+            from models import ProcessRequest, UploadCaseRequest
 
 app = FastAPI(
     title="AI IT Vendor Renewal Intelligence Agent - POC 1",
@@ -58,11 +67,16 @@ def get_case_brief(case_id: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error reading JSON file: {str(e)}")
 
-    sm = RenewalStateMachine()
-    brief = sm.run(raw_data)
-    if brief.get("error"):
-        raise HTTPException(status_code=422, detail=brief.get("message"))
-    return brief
+    if RenewalDeskOrchestrator:
+        orch = RenewalDeskOrchestrator()
+        result = orch.run_play(raw_data)
+        return result["brief"]
+    else:
+        sm = RenewalStateMachine()
+        brief = sm.run(raw_data)
+        if brief.get("error"):
+            raise HTTPException(status_code=422, detail=brief.get("message"))
+        return brief
 
 @app.post("/api/process")
 def process_case(request: ProcessRequest):

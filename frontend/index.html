@@ -14,7 +14,7 @@
       <div class="nav-brand">
         <span class="agent-icon">⚡</span>
         <strong>Renewal Intelligence Agent</strong>
-        <span class="poc-badge">POC 1</span>
+        <span class="poc-badge">POC 2</span>
       </div>
       <div class="nav-controls">
         <label for="caseSelect">Select Input Case:</label>
@@ -23,6 +23,7 @@
         </select>
         <input type="file" id="fileUploadInput" accept=".json" style="display: none;">
         <button id="uploadBtn" title="Upload Contract JSON">📁 Upload</button>
+        <button id="flowModalBtn" title="View Kozmo Move Execution Graph">🔀 View Move Flow</button>
         <button id="reloadBtn" title="Run State Machine Again">🔄 Re-evaluate</button>
         <button id="printBtn" class="btn-primary" title="Export as PDF / Print">🖨️ Export PDF</button>
       </div>
@@ -31,7 +32,7 @@
 
   <!-- State Machine Pipeline Bar (Hidden when printing) -->
   <div class="pipeline-container no-print">
-    <div class="pipeline-title">State Machine Execution Audit:</div>
+    <div class="pipeline-title">Kozmo Move Pipeline Audit:</div>
     <div id="statePipeline" class="pipeline-steps">
       <!-- Injected by app.js -->
     </div>
@@ -387,6 +388,32 @@
     </footer>
 
   </main>
+
+  <!-- Kozmo Move Graph Execution Modal (Hidden by default) -->
+  <div id="moveFlowModal" class="flow-modal-backdrop no-print" style="display: none;">
+    <div class="flow-modal-dialog">
+      <div class="flow-modal-header">
+        <div class="flow-modal-title">
+          <span class="icon">🔀</span>
+          <h3>Kozmo Renewal Desk — Move Graph Execution Trace</h3>
+        </div>
+        <button id="closeFlowModalBtn" class="flow-modal-close" title="Close modal">&times;</button>
+      </div>
+      <div class="flow-modal-body">
+        <p class="flow-modal-desc">
+          Inspects the executed Move Graph. Shows which <strong>Actions</strong> executed, which <strong>Gates</strong> tested criteria, and which nodes were dynamically <strong>SKIPPED</strong> based on contract conditions.
+        </p>
+        <!-- Move Tabs -->
+        <div class="move-tabs" id="moveTabsContainer">
+          <!-- Populated by app.js -->
+        </div>
+        <!-- Move Detail Card -->
+        <div class="move-detail-container" id="moveDetailContainer">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
