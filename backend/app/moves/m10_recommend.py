@@ -155,9 +155,8 @@ class MoveM10ModelCostsAndRecommend(BaseMove):
                 risks.append({"risk": f"Bundled new modules ({', '.join(dossier.added_modules)})", "level": "Medium" if dossier.increase_pct > pol.renew.max_increase_pct else "Low",
                               "impact": "Scope added to the renewal may be driving part of the price increase"})
 
-            perf = pol.performance
-            if (dossier.support_sla_achievement < perf.poor_support_sla_pct or dossier.critical_incidents_count >= perf.poor_incidents
-                    or dossier.uptime_gap > perf.poor_uptime_gap):
+            # M04 already applied policy.performance; "Needs Improvement" is exactly the poor-SLA rule.
+            if dossier.performance_rating == "Needs Improvement":
                 risks.append({"risk": "Chronic SLA underperformance & disruption", "level": "High", "impact": "Operational downtime and productivity degradation"})
 
             if (dossier.proposed_term_months >= pol.risk.long_term_months
