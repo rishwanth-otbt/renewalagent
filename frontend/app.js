@@ -375,13 +375,17 @@ function renderBrief(data) {
     </tr>
   `).join("");
 
-  // 8. Section 7: Further Analysis
+  // 8. Section 7: Further Analysis (Commented out for POC 1 - deferred to POC 2)
+  /*
   const analysisTableBody = document.querySelector("#furtherAnalysisTable tbody");
-  analysisTableBody.innerHTML = (analysis || []).map(an => `
-    <tr>
-      <td><strong>${an.investigation}</strong></td>
-      <td>${an.deliverable}</td>
-      <td><span class="status-chip neutral">${an.time}</span></td>
-    </tr>
-  `).join("");
+  if (analysisTableBody) {
+    analysisTableBody.innerHTML = (analysis || []).map(an => `
+      <tr>
+        <td><strong>${an.investigation}</strong></td>
+        <td>${an.deliverable}</td>
+        <td><span class="status-chip neutral">${an.time}</span></td>
+      </tr>
+    `).join("");
+  }
+  */
 }
